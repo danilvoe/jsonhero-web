@@ -1,11 +1,4 @@
-import { HomeCollaborateSection } from "~/components/Home/HomeCollaborateSection";
-import { HomeEdgeCasesSection } from "~/components/Home/HomeEdgeCasesSection";
-import { HomeFeatureGridSection } from "~/components/Home/HomeFeatureGridSection";
-import { HomeHeader } from "~/components/Home/HomeHeader";
-import { HomeHeroSection } from "~/components/Home/HomeHeroSection";
-import { HomeInfoBoxSection } from "~/components/Home/HomeInfoBoxSection";
-import { HomeSearchSection } from "~/components/Home/HomeSearchSection";
-import { HomeFooter } from "~/components/Home/HomeFooter";
+import { HomeMinimalPage } from "~/components/Home/HomeMinimalPage";
 import {
   commitSession,
   getSession,
@@ -13,7 +6,6 @@ import {
 } from "../services/toast.server";
 import { json, useLoaderData } from "remix";
 import ToastPopover from "../components/UI/ToastPopover";
-import { HomeTriggerDevBanner } from "~/components/Home/HomeTriggerDevBanner";
 
 type LoaderData = { toastMessage?: ToastMessage };
 
@@ -33,7 +25,7 @@ export default function Index() {
   const { toastMessage } = useLoaderData<LoaderData>();
 
   return (
-    <div className="overflow-x-hidden">
+    <>
       {toastMessage && (
         <ToastPopover
           message={toastMessage.message}
@@ -43,14 +35,7 @@ export default function Index() {
         />
       )}
 
-      <HomeHeader fixed={true} />
-      <HomeHeroSection />
-      <HomeInfoBoxSection />
-      <HomeEdgeCasesSection />
-      <HomeSearchSection />
-      <HomeCollaborateSection />
-      <HomeFeatureGridSection />
-      <HomeFooter />
-    </div>
+      <HomeMinimalPage />
+    </>
   );
 }
