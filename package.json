@@ -14,7 +14,7 @@
     "dev:search": "esbuild ./app/entry.worker.ts --outfile=./public/entry.worker.js --bundle --format=esm --define:process.env.NODE_ENV='\"development\"' --watch",
     "dev:worker": "esbuild --define:process.env.NODE_ENV='\"development\"' --bundle --sourcemap --outdir=dist ./worker",
     "start:worker": "miniflare --env .env --build-command \"npm run dev:worker\" --watch",
-    "start:docker:worker": "miniflare --host 0.0.0.0 --port 8787 --kv-persist /data/kv --no-update-check --env .env",
+    "start:docker:worker": "miniflare --host 0.0.0.0 --port 8787 --kv-persist /data/kv --no-update-check --env .env --cron '0 * * * *'",
     "start:docker": "concurrently \"npm run dev\" \"npm run start:docker:worker\"",
     "dev": "concurrently \"npm run dev:css\" \"npm run dev:search\" \"remix watch\"",
     "dev:css": "tailwindcss -i ./styles/tailwind.css -o ./app/tailwind.css --watch",

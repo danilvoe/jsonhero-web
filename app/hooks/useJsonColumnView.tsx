@@ -155,7 +155,10 @@ export function JsonColumnViewProvider({ children }: { children: ReactNode }) {
     }
     localStorage.setItem(
       doc.id,
-      JSON.stringify(pick(state, "selectedNodeId", "highlightedNodeId"))
+      JSON.stringify({
+        ...pick(state, "selectedNodeId", "highlightedNodeId"),
+        updatedAt: Date.now(),
+      })
     );
   }, [
     isStateRestored.current,

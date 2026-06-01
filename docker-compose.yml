@@ -5,13 +5,15 @@ services:
     environment:
       SESSION_SECRET: change-me-before-use
       OFFLINE: "true"
+      # 30 days; override or unset for no default TTL
+      DOCUMENT_DEFAULT_TTL: "2592000"
     volumes:
       - jsonhero-kv:/data/kv
     entrypoint:
       - /bin/sh
       - -c
       - |
-        printf 'SESSION_SECRET=%s\nOFFLINE=true\n' "$$SESSION_SECRET" > .env
+        printf 'SESSION_SECRET=%s\nOFFLINE=true\nDOCUMENT_DEFAULT_TTL=%s\n' "$$SESSION_SECRET" "$$DOCUMENT_DEFAULT_TTL" > .env
         exec npm run start:docker
     restart: unless-stopped
 

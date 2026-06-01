@@ -1,4 +1,5 @@
 import { customRandom } from "nanoid";
+import { putDocument, updateDocumentValue } from "./documentKv.server";
 import safeFetch from "./utilities/safeFetch";
 import createFromRawXml from "./utilities/xml/createFromRawXml";
 import isXML from "./utilities/xml/isXML";
@@ -72,9 +73,9 @@ export async function createFromUrl(
     readOnly: options?.readOnly ?? false,
   };
 
-  await DOCUMENTS.put(docId, JSON.stringify(doc), {
-    expirationTtl: options?.ttl ?? undefined,
-    metadata: options?.metadata ?? undefined,
+  await putDocument(docId, JSON.stringify(doc), {
+    ttl: options?.ttl,
+    metadata: options?.metadata,
   });
 
   return doc;
@@ -95,9 +96,9 @@ export async function createFromRawJson(
   };
 
   JSON.parse(contents);
-  await DOCUMENTS.put(docId, JSON.stringify(doc), {
-    expirationTtl: options?.ttl ?? undefined,
-    metadata: options?.metadata ?? undefined,
+  await putDocument(docId, JSON.stringify(doc), {
+    ttl: options?.ttl,
+    metadata: options?.metadata,
   });
 
   return doc;
@@ -123,7 +124,7 @@ export async function updateDocument(
 
   const updated = { ...document, title };
 
-  await DOCUMENTS.put(slug, JSON.stringify(updated));
+  await updateDocumentValue(slug, JSON.stringify(updated));
 
   return updated;
 }
@@ -148,7 +149,7 @@ export async function updateDocumentContents(
 
   const updated: RawJsonDocument = { ...document, contents };
 
-  await DOCUMENTS.put(slug, JSON.stringify(updated));
+  await updateDocumentValue(slug, JSON.stringify(updated));
 
   return updated;
 }

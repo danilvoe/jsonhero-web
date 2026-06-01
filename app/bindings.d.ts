@@ -7,4 +7,5 @@ declare global {
   const GRAPH_JSON_COLLECTION: string;
   const APIHERO_PROJECT_KEY: string;
   const OFFLINE: string;
+  const DOCUMENT_DEFAULT_TTL: string;
 }

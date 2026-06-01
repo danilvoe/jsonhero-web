@@ -44,6 +44,8 @@ import styles from "./tailwind.css";
 import { getThemeSession } from "./theme.server";
 import { getStarCount } from "./services/github.server";
 import { isOffline } from "~/utilities/isOffline";
+import { getDefaultDocumentTtlSeconds } from "~/documentTtl.server";
+import { DocumentLocalStoragePruner } from "~/components/DocumentLocalStoragePruner";
 import { StarCountProvider } from "./components/StarCountProvider";
 import { PreferencesProvider } from "~/components/PreferencesProvider";
 
@@ -56,6 +58,7 @@ export type LoaderData = {
   starCount?: number;
   themeOverride?: Theme;
   offline?: boolean;
+  documentRetentionMs?: number;
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -63,11 +66,15 @@ export const loader: LoaderFunction = async ({ request }) => {
   const starCount = await getStarCount();
   const themeOverride = getThemeFromRequest(request);
 
+  const defaultTtlSeconds = getDefaultDocumentTtlSeconds();
+
   const data: LoaderData = {
     theme: themeSession.getTheme(),
     starCount,
     themeOverride,
     offline: isOffline(),
+    documentRetentionMs:
+      defaultTtlSeconds != null ? defaultTtlSeconds * 1000 : undefined,
   };
 
   return data;
@@ -108,7 +115,7 @@ function App({ offline }: { offline?: boolean }) {
 }
 
 export default function AppWithProviders() {
-  const { theme, starCount, themeOverride, offline } =
+  const { theme, starCount, themeOverride, offline, documentRetentionMs } =
     useLoaderData<LoaderData>();
 
   const location = useLocation();
@@ -123,6 +130,7 @@ export default function AppWithProviders() {
     >
       <PreferencesProvider>
         <StarCountProvider starCount={starCount}>
+          <DocumentLocalStoragePruner retentionMs={documentRetentionMs} />
           <App offline={offline} />
         </StarCountProvider>
       </PreferencesProvider>

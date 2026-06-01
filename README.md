@@ -54,6 +54,15 @@ Send your JSON to JSON Hero in a variety of ways
   }
   ```
 
+### Document retention
+
+Documents are stored in Cloudflare KV. By default they do not expire unless you pass `ttl` (minimum 60 seconds) when creating a document.
+
+- **Self-hosted Docker**: set `DOCUMENT_DEFAULT_TTL` (seconds) in `docker-compose.yml` or `.env`. The default in compose is 30 days (`2592000`). New documents without an explicit `ttl` use this value.
+- **Updates**: editing a title or JSON body keeps the existing expiration. Documents without expiration get the default TTL on first edit when `DOCUMENT_DEFAULT_TTL` is set.
+- **Cleanup**: an hourly cron job (`0 * * * *`) deletes expired entries from KV. This matters most for Docker/Miniflare where TTL may not be enforced on disk.
+- **Browser UI state**: column/tree UI preferences in `localStorage` are pruned on load when a default TTL is configured (entries include `updatedAt`).
+
   The JSON response will be the following:
 
   ```json

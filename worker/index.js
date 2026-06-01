@@ -1,6 +1,7 @@
 import { createEventHandler } from "@remix-run/cloudflare-workers";
 
 import * as build from "../build";
+import { cleanupExpiredDocuments } from "../app/documentKv.server";
 
 addEventListener(
   "fetch",
@@ -15,3 +16,7 @@ addEventListener(
     },
   })
 );
+
+addEventListener("scheduled", (event) => {
+  event.waitUntil(cleanupExpiredDocuments());
+});

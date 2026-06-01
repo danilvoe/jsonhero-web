@@ -494,7 +494,10 @@ export function useVirtualTree<T extends { id: string; children?: T[] }, R>(
     if (options.persistState) {
       localStorage.setItem(
         `${options.id}-virtual-tree-state`,
-        JSON.stringify(pick(state, "collapsedState"))
+        JSON.stringify({
+          ...pick(state, "collapsedState"),
+          updatedAt: Date.now(),
+        })
       );
     }
   }, [

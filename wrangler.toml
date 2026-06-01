@@ -12,6 +12,9 @@ kv_namespaces = [
 [vars]
 GRAPH_JSON_COLLECTION = "jsonhero-dev"
 
+[triggers]
+crons = ["0 * * * *"]
+
 [site]
 bucket = "./public"
 entry-point = "."
@@ -32,6 +35,9 @@ kv_namespaces = [
 
 [env.production.vars]
 GRAPH_JSON_COLLECTION = "jsonhero-prod"
+
+[env.production.triggers]
+crons = ["0 * * * *"]
 
 # Secrets
 # [SESSION_STORAGE]
