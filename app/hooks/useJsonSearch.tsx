@@ -1,3 +1,5 @@
+import { isLargeDocument } from "~/uploadLimits";
+import { useJsonDoc } from "./useJsonDoc";
 import { useJson } from "./useJson";
 import {
   createContext,
@@ -17,7 +19,7 @@ export type InitializeIndexEvent = {
 
 export type SearchEvent = {
   type: "search";
-  payload: { query: string };
+  payload: { query: string; generation: number };
 };
 
 export type SearchSendWorkerEvent = InitializeIndexEvent | SearchEvent;
@@ -46,6 +48,8 @@ const JsonSearchStateContext = createContext<JsonSearchState>(
 
 const JsonSearchApiContext = createContext<JsonSearchApi>({} as JsonSearchApi);
 
+const SEARCH_DEBOUNCE_MS = 200;
+
 export type JsonSearchState = {
   status: "initializing" | "idle" | "searching";
   query?: string;
@@ -61,19 +65,30 @@ type ResetAction = {
   type: "reset";
 };
 
-type JsonSearchAction = SearchReceiveWorkerEvent | SearchAction | ResetAction;
+type ReindexAction = {
+  type: "reindex";
+};
+
+type JsonSearchAction =
+  | SearchReceiveWorkerEvent
+  | SearchAction
+  | ResetAction
+  | ReindexAction;
 
 function reducer(
   state: JsonSearchState,
   action: JsonSearchAction
 ): JsonSearchState {
+  if (action.type === "reindex") {
+    return { ...state, status: "initializing" };
+  }
+
   switch (state.status) {
     case "initializing": {
       if (action.type === "index-initialized") {
         return {
           ...state,
           status: "idle",
-          results: undefined,
         };
       }
 
@@ -108,6 +123,13 @@ function reducer(
         };
       }
 
+      if (action.type === "search") {
+        return {
+          ...state,
+          query: action.payload.query,
+        };
+      }
+
       if (
         action.type === "search-results" &&
         state.query === action.payload.query
@@ -124,62 +146,17 @@ function reducer(
   }
 }
 
-let lastAction: any | undefined;
-
-function wrapReducer<S, A extends { type: string }>(
-  name: string,
-  reducer: React.Reducer<S, A>
-): React.Reducer<S, A> {
-  return (state, action) => {
-    const next = reducer(state, action);
-
-    if (process.env.NODE_ENV !== "production") {
-      if (!lastAction) {
-        console.groupCollapsed(
-          `%cAction: %c${
-            name + " " + action.type
-          } %cat ${getCurrentTimeFormatted()}`,
-          "color: lightgreen; font-weight: bold;",
-          "color: white; font-weight: bold;",
-          "color: lightblue; font-weight: lighter;"
-        );
-        console.log(
-          "%cPrevious State:",
-          "color: #9E9E9E; font-weight: 700;",
-          state
-        );
-        console.log("%cAction:", "color: #00A7F7; font-weight: 700;", action);
-        console.log("%cNext State:", "color: #47B04B; font-weight: 700;", next);
-        console.groupEnd();
-        lastAction = action;
-      } else {
-        lastAction = undefined;
-      }
-    }
-
-    return next;
-  };
-}
-
-const getCurrentTimeFormatted = () => {
-  const currentTime = new Date();
-  const hours = currentTime.getHours();
-  const minutes = currentTime.getMinutes();
-  const seconds = currentTime.getSeconds();
-  const milliseconds = currentTime.getMilliseconds();
-  return `${hours}:${minutes}:${seconds}.${milliseconds}`;
-};
-
 export function JsonSearchProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [json] = useJson();
+  const { doc } = useJsonDoc();
 
   const [state, dispatch] = useReducer<
     React.Reducer<JsonSearchState, JsonSearchAction>
-  >(wrapReducer("jsonSearch", reducer), { status: "initializing" });
+  >(reducer, { status: "initializing" });
 
   const search = useCallback(
     (query: string) => {
@@ -198,6 +175,7 @@ export function JsonSearchProvider({
   );
 
   const workerRef = useRef<Worker | null>();
+  const searchGenerationRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.Worker === "undefined") {
@@ -210,26 +188,64 @@ export function JsonSearchProvider({
       workerRef.current = worker;
     }
 
-    reset();
+    dispatch({ type: "reindex" });
 
-    workerRef.current.postMessage({
-      type: "initialize-index",
-      payload: {
-        json,
-      },
-    });
-  }, [json, handleWorkerMessage, reset]);
+    const initializeIndex = () => {
+      workerRef.current?.postMessage({
+        type: "initialize-index",
+        payload: {
+          json,
+        },
+      });
+    };
+
+    if (isLargeDocument(doc) && typeof requestIdleCallback === "function") {
+      const idleId = requestIdleCallback(initializeIndex, { timeout: 4000 });
+
+      return () => {
+        cancelIdleCallback(idleId);
+      };
+    }
+
+    if (isLargeDocument(doc)) {
+      const timeoutId = setTimeout(initializeIndex, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+
+    initializeIndex();
+  }, [doc, json, handleWorkerMessage]);
+
+  const prevStatusRef = useRef(state.status);
 
   useEffect(() => {
-    if (state.status !== "searching") {
+    const becameIdle =
+      prevStatusRef.current === "initializing" && state.status === "idle";
+
+    prevStatusRef.current = state.status;
+
+    if (becameIdle && state.query) {
+      dispatch({ type: "search", payload: { query: state.query } });
+    }
+  }, [state.status, state.query]);
+
+  useEffect(() => {
+    if (state.status !== "searching" || !state.query) {
       return;
     }
 
-    workerRef.current?.postMessage({
-      type: "search",
-      payload: { query: state.query },
-    });
-  }, [state.status, workerRef.current]);
+    const timeoutId = setTimeout(() => {
+      const generation = ++searchGenerationRef.current;
+      workerRef.current?.postMessage({
+        type: "search",
+        payload: { query: state.query, generation },
+      });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [state.status, state.query]);
 
   return (
     <JsonSearchStateContext.Provider value={state}>

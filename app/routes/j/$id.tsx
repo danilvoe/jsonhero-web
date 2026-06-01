@@ -9,10 +9,14 @@ import {
   useParams,
 } from "remix";
 import invariant from "tiny-invariant";
-import { deleteDocument, getDocument, JSONDocument } from "~/jsonDoc.server";
+import {
+  deleteDocument,
+  getDocumentContents,
+  getDocumentMeta,
+  JSONDocumentMeta,
+} from "~/jsonDoc.server";
 import { JsonDocProvider } from "~/hooks/useJsonDoc";
 import { useEffect } from "react";
-import { JsonProvider } from "~/hooks/useJson";
 import { JsonEditProvider } from "~/hooks/useJsonEdit";
 import { Footer } from "~/components/Footer";
 import { Header } from "~/components/Header";
@@ -37,12 +41,16 @@ import {
   setErrorMessage,
   setSuccessMessage,
 } from "~/services/toast.server";
-import { getRandomUserAgent } from '~/utilities/getRandomUserAgent'
+import { getRandomUserAgent } from "~/utilities/getRandomUserAgent";
+import { ClientJsonProvider } from "~/components/ClientJsonProvider";
+import {
+  LARGE_DOC_CLIENT_BYTES,
+} from "~/uploadLimits";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   invariant(params.id, "expected params.id");
 
-  const doc = await getDocument(params.id);
+  const doc = await getDocumentMeta(params.id);
 
   if (!doc) {
     throw new Response("Not Found", {
@@ -52,10 +60,9 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 
   const path = getPathFromRequest(request);
   const minimal = getMinimalFromRequest(request);
+  const fromUpload = new URL(request.url).searchParams.get("fromUpload") === "1";
 
   if (doc.type == "url") {
-    console.log(`Fetching ${doc.url}...`);
-
     const jsonResponse = await safeFetch(doc.url, {
       headers: {
         "User-Agent": getRandomUserAgent(),
@@ -81,9 +88,31 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       minimal,
     };
   } else {
+    const clientFetch =
+      fromUpload || doc.contentBytes > LARGE_DOC_CLIENT_BYTES;
+
+    if (clientFetch) {
+      return {
+        doc,
+        json: null,
+        clientFetch: true,
+        path,
+        minimal,
+      };
+    }
+
+    const contents = await getDocumentContents(params.id);
+
+    if (contents == null) {
+      throw new Response("Not Found", {
+        status: 404,
+      });
+    }
+
     return {
       doc,
-      json: JSON.parse(doc.contents),
+      json: JSON.parse(contents),
+      sourceText: contents,
       path,
       minimal,
     };
@@ -100,7 +129,7 @@ export const action: ActionFunction = async ({ request, params }) => {
 
   const toastCookie = await getSession(request.headers.get("cookie"));
 
-  const document = await getDocument(params.id);
+  const document = await getDocumentMeta(params.id);
 
   if (!document) {
     setErrorMessage(toastCookie, "Document not found", "Error");
@@ -152,8 +181,10 @@ function getMinimalFromRequest(request: Request): boolean | undefined {
 }
 
 type LoaderData = {
-  doc: JSONDocument;
-  json: unknown;
+  doc: JSONDocumentMeta;
+  json: unknown | null;
+  sourceText?: string | null;
+  clientFetch?: boolean;
   path?: string;
   minimal?: boolean;
 };
@@ -195,7 +226,12 @@ export default function JsonDocumentRoute() {
       key={loaderData.doc.id}
       minimal={loaderData.minimal}
     >
-      <JsonProvider initialJson={loaderData.json}>
+      <ClientJsonProvider
+        doc={loaderData.doc}
+        initialJson={loaderData.json}
+        initialSourceText={loaderData.sourceText}
+        clientFetch={loaderData.clientFetch}
+      >
         <JsonEditProvider>
           <JsonSchemaProvider>
             <JsonColumnViewProvider>
@@ -245,7 +281,7 @@ export default function JsonDocumentRoute() {
             </JsonColumnViewProvider>
           </JsonSchemaProvider>
         </JsonEditProvider>
-      </JsonProvider>
+      </ClientJsonProvider>
     </JsonDocProvider>
   );
 }
@@ -253,7 +289,6 @@ export default function JsonDocumentRoute() {
 export function CatchBoundary() {
   const error = useCatch();
   const params = useParams();
-  console.log("error", error)
 
   return (
     <div className="flex items-center justify-center w-screen h-screen bg-[rgb(56,52,139)]">

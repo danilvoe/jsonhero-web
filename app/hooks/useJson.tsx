@@ -17,11 +17,16 @@ const JsonContext = createContext<JsonContextType | undefined>(undefined);
 export function JsonProvider({
   children,
   initialJson,
+  skipStableJson = false,
 }: {
   children: ReactNode;
   initialJson: unknown;
+  skipStableJson?: boolean;
 }) {
-  const stablizedJson = useMemo(() => stableJson(initialJson), [initialJson]);
+  const stablizedJson = useMemo(
+    () => (skipStableJson ? initialJson : stableJson(initialJson)),
+    [initialJson, skipStableJson]
+  );
 
   const [json, setJson] = useState<unknown>(stablizedJson);
 

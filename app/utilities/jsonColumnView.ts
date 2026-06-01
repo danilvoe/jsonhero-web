@@ -1,6 +1,7 @@
 import { inferType, JSONValueType } from "@jsonhero/json-infer-types";
 import { JSONHeroPath, PathComponent } from "@jsonhero/path";
 import { ColumnViewNode } from "~/useColumnView";
+import { isLargeContainer } from "~/performanceLimits";
 import { formatValue } from "./formatter";
 import { iconForType } from "./icons";
 
@@ -26,7 +27,6 @@ function generateChildren(
     return info.value.map((value, index) => {
       const childPath = path.child(index.toString());
       const childInfo = inferType(value);
-      const children = generateChildren(childInfo, childPath);
 
       return {
         id: childPath.toString(),
@@ -35,7 +35,8 @@ function generateChildren(
         longTitle: `Index ${index.toString()}`,
         subtitle: formatValue(childInfo),
         icon: iconForType(childInfo),
-        children,
+        children: childrenForValue(value, childInfo, childPath),
+        hasChildren: isLargeContainer(value) || undefined,
       };
     });
   }
@@ -45,7 +46,6 @@ function generateChildren(
       const cleanKey = key.replace(/\./g, "\\.");
       const childPath = path.child(cleanKey);
       const childInfo = inferType(value);
-      const children = generateChildren(childInfo, childPath);
 
       return {
         id: childPath.toString(),
@@ -53,12 +53,25 @@ function generateChildren(
         title: key,
         subtitle: formatValue(childInfo),
         icon: iconForType(childInfo),
-        children,
+        children: childrenForValue(value, childInfo, childPath),
+        hasChildren: isLargeContainer(value) || undefined,
       };
     });
   }
 
   return [];
+}
+
+function childrenForValue(
+  value: unknown,
+  info: JSONValueType,
+  path: JSONHeroPath
+): Array<ColumnViewNode> {
+  if (isLargeContainer(value)) {
+    return [];
+  }
+
+  return generateChildren(info, path);
 }
 
 export function generateNodesToPath(

@@ -39,6 +39,7 @@ export type UseVirtualTreeInstance<T> = {
   focusFirst: () => void;
   blur: () => void;
   scrollToNode: (id: string) => void;
+  expandNode: (id: string) => void;
   getTreeProps: () => React.HTMLAttributes<HTMLElement>;
 };
 
@@ -106,6 +107,16 @@ type CollapseAllNodesAction = {
   type: "COLLAPSE_ALL_NODES"
 };
 
+type SetNodesAction = {
+  type: "SET_NODES";
+  nodes: unknown[];
+};
+
+type ExpandNodeAction = {
+  type: "EXPAND_NODE";
+  id: string;
+};
+
 type TreeAction =
   | ToggleNodeAction
   | MoveNodeAction
@@ -116,7 +127,9 @@ type TreeAction =
   | RestoreStateAction
   | ExpandAllOnPathAction
   | BlurAction
-  | CollapseAllNodesAction;
+  | CollapseAllNodesAction
+  | SetNodesAction
+  | ExpandNodeAction;
 
 function expandNode<T extends { id: string; children?: T[] }>(
   state: TreeState<T>,
@@ -453,6 +466,16 @@ export function useVirtualTree<T extends { id: string; children?: T[] }, R>(
             ),
           };
         }
+        case "SET_NODES": {
+          return {
+            ...state,
+            nodes: action.nodes as T[],
+            items: createNodeItems(action.nodes as T[], 0, state.collapsedState),
+          };
+        }
+        case "EXPAND_NODE": {
+          return expandNode(state, action.id);
+        }
         default:
           return state;
       }
@@ -533,6 +556,10 @@ export function useVirtualTree<T extends { id: string; children?: T[] }, R>(
     }
   }, [options.persistState, options.id, dispatch, isStateRestored.current]);
 
+  useEffect(() => {
+    dispatch({ type: "SET_NODES", nodes: options.nodes });
+  }, [options.nodes, dispatch]);
+
   const rowVirtualizer = useVirtual({
     size: state.items.length,
     parentRef: options.parentRef,
@@ -566,6 +593,13 @@ export function useVirtualTree<T extends { id: string; children?: T[] }, R>(
   const focusNode = useCallback(
     (id: string) => {
       dispatch({ type: "FOCUS_NODE", id });
+    },
+    [dispatch]
+  );
+
+  const expandNodeById = useCallback(
+    (id: string) => {
+      dispatch({ type: "EXPAND_NODE", id });
     },
     [dispatch]
   );
@@ -605,6 +639,7 @@ export function useVirtualTree<T extends { id: string; children?: T[] }, R>(
     focusedNodeId: state.focusedNodeId,
     getTreeProps: useCallback(createTreeProps(dispatch), [dispatch]),
     scrollToNode,
+    expandNode: expandNodeById,
   };
 }
 

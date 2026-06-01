@@ -6,8 +6,6 @@ export const FileDropzone: FunctionComponent = ({ children }) => {
   const onDrop = useCallback((acceptedFiles) => {
     acceptedFiles.forEach((file: Blob) => {
       const reader = new FileReader();
-      reader.onabort = () => console.log("file reading was aborted");
-      reader.onerror = () => console.log("file reading has failed");
       reader.onload = () => {
         if (typeof reader.result === "string") {
           let json = JSON.parse(reader.result);

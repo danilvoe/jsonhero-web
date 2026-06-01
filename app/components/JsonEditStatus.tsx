@@ -1,15 +1,17 @@
-import { useEffect } from "react";
-import { useFetcher } from "remix";
+import { useEffect, useRef, useState } from "react";
 import { useJsonDoc } from "~/hooks/useJsonDoc";
 import { useJsonEdit } from "~/hooks/useJsonEdit";
 import { usePreferences } from "~/components/PreferencesProvider";
+import { saveDocumentContents } from "~/utilities/saveDocumentContents";
 import { Body } from "./Primitives/Body";
 
 export function JsonEditStatus() {
   const { doc } = useJsonDoc();
   const { isDirty, parseError, getExportText, markSaved } = useJsonEdit();
   const [preferences] = usePreferences();
-  const saveFetcher = useFetcher();
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveAbortRef = useRef<AbortController | null>(null);
   const indent = preferences?.indent || 2;
 
   const canPersist =
@@ -33,27 +35,58 @@ export function JsonEditStatus() {
   }, [isDirty]);
 
   useEffect(() => {
-    if (saveFetcher.type === "done" && !saveFetcher.data?.error) {
-      markSaved();
-    }
-  }, [saveFetcher.type, saveFetcher.data, markSaved]);
+    return () => {
+      saveAbortRef.current?.abort();
+    };
+  }, []);
 
   if (!isDirty) {
     return null;
   }
 
-  const handleSave = () => {
-    if (!canPersist) {
+  const handleSave = async () => {
+    if (!canPersist || isSaving) {
       return;
     }
 
-    saveFetcher.submit(
-      { contents: getExportText(indent) },
-      {
-        method: "post",
-        action: `/actions/${doc.id}/update-contents`,
-      }
-    );
+    let contents: string;
+
+    try {
+      contents = getExportText(indent);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Cannot export JSON document";
+      setSaveError(message);
+      return;
+    }
+
+    if (contents.trim() === "") {
+      setSaveError("Cannot save an empty document");
+      return;
+    }
+
+    saveAbortRef.current?.abort();
+    const controller = new AbortController();
+    saveAbortRef.current = controller;
+
+    setSaveError(null);
+    setIsSaving(true);
+
+    const result = await saveDocumentContents(doc.id, contents, controller.signal);
+
+    if (controller.signal.aborted) {
+      return;
+    }
+
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
+
+    markSaved();
+    setSaveError(null);
   };
 
   return (
@@ -68,16 +101,18 @@ export function JsonEditStatus() {
       {canPersist && (
         <button
           type="button"
-          onClick={handleSave}
-          disabled={saveFetcher.state !== "idle"}
+          onClick={() => {
+            void handleSave();
+          }}
+          disabled={isSaving}
           className="text-lime-700 dark:text-lime-400 font-semibold hover:text-lime-800 dark:hover:text-lime-300 transition disabled:opacity-50"
         >
-          {saveFetcher.state !== "idle" ? "Saving…" : "Save"}
+          {isSaving ? "Saving…" : "Save"}
         </button>
       )}
-      {saveFetcher.data?.error && (
+      {saveError && (
         <Body className="text-red-700 dark:text-red-300 whitespace-nowrap">
-          {saveFetcher.data.error}
+          {saveError}
         </Body>
       )}
     </div>

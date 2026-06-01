@@ -1,10 +1,9 @@
 /// <reference lib="WebWorker" />
-import { JSONHeroSearch } from "@jsonhero/fuzzy-json-search";
-import { inferType } from "@jsonhero/json-infer-types";
-import { formatValue } from "./utilities/formatter";
+import { FastJsonSearch, cheapSearchValue } from "./worker/fastJsonSearch";
 
 type SearchWorker = {
-  searcher?: JSONHeroSearch;
+  searcher?: FastJsonSearch;
+  searchGeneration: number;
 };
 
 export type {};
@@ -17,47 +16,40 @@ type InitializeIndexEvent = {
 
 type SearchEvent = {
   type: "search";
-  payload: { query: string };
+  payload: { query: string; generation: number };
 };
 
 type SearchWorkerEvent = InitializeIndexEvent | SearchEvent;
 
+self.searchGeneration = 0;
+
 self.onmessage = (e: MessageEvent<SearchWorkerEvent>) => {
   const { type, payload } = e.data;
-
-  console.group(`SearchWorker: ${type}`);
-  console.log(payload);
 
   switch (type) {
     case "initialize-index": {
       const { json } = payload;
 
-      self.searcher = new JSONHeroSearch(json, {
-        cacheSettings: { max: 100, enabled: true },
-        formatter: valueFormatter,
-      });
-      self.searcher.prepareIndex();
+      self.searcher = new FastJsonSearch(cheapSearchValue);
+      self.searcher.prepareIndex(json);
 
       self.postMessage({ type: "index-initialized" });
 
       break;
     }
     case "search": {
-      const { query } = payload;
+      const { query, generation } = payload;
 
       if (!self.searcher) {
         throw new Error("Search index not initialized");
       }
 
-      const start = performance.now();
-
+      self.searchGeneration = generation;
       const results = self.searcher.search(query);
 
-      const end = performance.now();
-
-      console.log(`Search took ${end - start}ms`);
-
-      console.log("results", results);
+      if (generation !== self.searchGeneration) {
+        break;
+      }
 
       self.postMessage({
         type: "search-results",
@@ -65,12 +57,4 @@ self.onmessage = (e: MessageEvent<SearchWorkerEvent>) => {
       });
     }
   }
-
-  console.groupEnd();
 };
-
-function valueFormatter(value: unknown): string | undefined {
-  const inferredType = inferType(value);
-
-  return formatValue(inferredType);
-}

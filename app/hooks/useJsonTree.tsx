@@ -9,12 +9,22 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { useVirtualTree, UseVirtualTreeInstance } from "./useVirtualTree";
 import invariant from "tiny-invariant";
 import { useJsonDoc } from "./useJsonDoc";
+import { isLargeDocument } from "~/uploadLimits";
+import { isLargeContainer } from "~/performanceLimits";
+import {
+  ancestorPathIds,
+  generateShallowTreeViewNodes,
+  materializeTreeViewPath,
+  treeNodeIsExpandable,
+} from "~/utilities/shallowJsonNodes";
 
 const initialRect = { width: 800, height: 600 };
 
@@ -25,6 +35,7 @@ export type JsonTreeOptions = {
 export type UseJsonTreeInstance = {
   tree: UseVirtualTreeInstance<JsonTreeViewNode>;
   parentRef: React.RefObject<HTMLDivElement>;
+  toggleNode: (id: string, source?: KeyboardEvent | MouseEvent) => void;
 };
 
 export type JsonTreeViewType = UseJsonTreeInstance;
@@ -46,14 +57,51 @@ export function JsonTreeViewProvider({
   );
 }
 
+function findTreeNodeById(
+  nodes: JsonTreeViewNode[],
+  id: string
+): JsonTreeViewNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return node;
+    }
+
+    if (node.children !== undefined) {
+      const found = findTreeNodeById(node.children, id);
+
+      if (found) {
+        return found;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+export { treeNodeIsExpandable } from "~/utilities/shallowJsonNodes";
+
 export function useJsonTree(options: JsonTreeOptions): UseJsonTreeInstance {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const { doc } = useJsonDoc();
   const [json] = useJson();
-  const jsonNodes = useMemo(() => {
-    return generateTreeViewNodes(json);
+  const isLarge = isLargeDocument(doc);
+  const [materializedNodes, setMaterializedNodes] =
+    useState<JsonTreeViewNode[] | null>(null);
+  const pendingExpandIds = useRef<string[]>([]);
+
+  useEffect(() => {
+    setMaterializedNodes(null);
+    pendingExpandIds.current = [];
   }, [json]);
+
+  const jsonNodes = useMemo(() => {
+    if (isLarge) {
+      return materializedNodes ?? generateShallowTreeViewNodes(json);
+    }
+
+    return generateTreeViewNodes(json);
+  }, [json, isLarge, materializedNodes]);
 
   const tree = useVirtualTree({
     id: doc.id,
@@ -65,7 +113,51 @@ export function useJsonTree(options: JsonTreeOptions): UseJsonTreeInstance {
     persistState: true,
   });
 
-  return { tree, parentRef };
+  useEffect(() => {
+    if (!pendingExpandIds.current.length) {
+      return;
+    }
+
+    const ids = pendingExpandIds.current;
+    pendingExpandIds.current = [];
+
+    for (const pathId of ids) {
+      tree.expandNode(pathId);
+    }
+  }, [jsonNodes, tree]);
+
+  const toggleNode = useCallback(
+    (id: string, source?: KeyboardEvent | MouseEvent) => {
+      const node = findTreeNodeById(jsonNodes, id);
+
+      if (
+        node &&
+        treeNodeIsExpandable(node) &&
+        (!node.children || node.children.length === 0)
+      ) {
+        pendingExpandIds.current = ancestorPathIds(id).filter(
+          (pathId) => pathId !== "$"
+        );
+
+        setMaterializedNodes((current) =>
+          materializeTreeViewPath(
+            current ??
+              (isLarge
+                ? generateShallowTreeViewNodes(json)
+                : generateTreeViewNodes(json)),
+            id,
+            json
+          )
+        );
+        return;
+      }
+
+      tree.toggleNode(id, source);
+    },
+    [isLarge, json, jsonNodes, tree]
+  );
+
+  return { tree, parentRef, toggleNode };
 }
 
 export function useJsonTreeViewContext(): JsonTreeViewType {
@@ -87,6 +179,8 @@ export type JsonTreeViewNode = {
   longTitle?: string;
   icon?: IconComponent;
   children?: Array<JsonTreeViewNode>;
+  /** Set on shallow nodes before children are materialized. */
+  hasChildren?: boolean;
 };
 
 export function generateTreeViewNodes(json: unknown): Array<JsonTreeViewNode> {
@@ -112,7 +206,8 @@ function generateChildren(
         longTitle: `Index ${index.toString()}`,
         subtitle: formatValue(itemInfo),
         icon: iconForType(itemInfo),
-        children: generateChildren(itemInfo, itemPath),
+        children: childrenForValue(item, itemInfo, itemPath),
+        hasChildren: isLargeContainer(item) || undefined,
       };
     });
   }
@@ -128,8 +223,21 @@ function generateChildren(
         title: key,
         subtitle: formatValue(itemInfo),
         icon: iconForType(itemInfo),
-        children: generateChildren(itemInfo, itemPath),
+        children: childrenForValue(value, itemInfo, itemPath),
+        hasChildren: isLargeContainer(value) || undefined,
       };
     });
   }
+}
+
+function childrenForValue(
+  value: unknown,
+  info: JSONValueType,
+  path: JSONHeroPath
+): Array<JsonTreeViewNode> | undefined {
+  if (isLargeContainer(value)) {
+    return [];
+  }
+
+  return generateChildren(info, path);
 }

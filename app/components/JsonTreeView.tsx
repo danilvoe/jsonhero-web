@@ -5,7 +5,11 @@ import {
   useJsonColumnViewState,
 } from "~/hooks/useJsonColumnView";
 import { useJsonDoc } from "~/hooks/useJsonDoc";
-import { JsonTreeViewNode, useJsonTreeViewContext } from "~/hooks/useJsonTree";
+import {
+  JsonTreeViewNode,
+  treeNodeIsExpandable,
+  useJsonTreeViewContext,
+} from "~/hooks/useJsonTree";
 import { VirtualNode } from "~/hooks/useVirtualTree";
 import { CopySelectedNodeShortcut } from "./CopySelectedNode";
 import { Body } from "./Primitives/Body";
@@ -15,7 +19,7 @@ export function JsonTreeView() {
   const { selectedNodeId, selectedNodeSource } = useJsonColumnViewState();
   const { goToNodeId } = useJsonColumnViewAPI();
 
-  const { tree, parentRef } = useJsonTreeViewContext();
+  const { tree, parentRef, toggleNode } = useJsonTreeViewContext();
 
   // Scroll to the selected node when this component is first rendered.
   const scrolledToNodeRef = useRef(false);
@@ -103,7 +107,7 @@ export function JsonTreeView() {
             <TreeViewNode
               virtualNode={virtualNode}
               key={virtualNode.node.id}
-              onToggle={(node, e) => tree.toggleNode(node.id, e)}
+              onToggle={(node, e) => toggleNode(node.id, e)}
               selectedNodeId={selectedNodeId}
             />
           ))}
@@ -127,6 +131,8 @@ function TreeViewNode({
   const indentClassName = computeTreeNodePaddingClass(depth);
 
   const isSelected = selectedNodeId === node.id;
+  const isLazyCollapsed = node.hasChildren && !node.children?.length;
+  const showCollapsed = virtualNode.isCollapsed || isLazyCollapsed;
 
   return (
     <div
@@ -151,7 +157,7 @@ function TreeViewNode({
         }`}
       >
         <div className={`pl-2 w-2/6 items-center flex`}>
-          {node.children && node.children.length > 0 && (
+          {treeNodeIsExpandable(node) && (
             <span
               onClick={(e) => {
                 if (onToggle) {
@@ -160,7 +166,7 @@ function TreeViewNode({
                 }
               }}
             >
-              {virtualNode.isCollapsed ? (
+              {showCollapsed ? (
                 <ChevronRightIcon
                   className={`w-4 h-4 mr-1 -ml-5  ${
                     isSelected

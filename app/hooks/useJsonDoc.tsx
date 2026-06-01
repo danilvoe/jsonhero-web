@@ -1,9 +1,9 @@
 import { createContext, ReactNode, useContext } from "react";
 import invariant from "tiny-invariant";
-import { JSONDocument } from "~/jsonDoc.server";
+import { JSONDocumentMeta } from "~/jsonDoc.server";
 
 type JsonDocType = {
-  doc: JSONDocument;
+  doc: JSONDocumentMeta;
   path?: string;
   minimal?: boolean;
 };
@@ -17,7 +17,7 @@ export function JsonDocProvider({
   minimal,
 }: {
   children: ReactNode;
-  doc: JSONDocument;
+  doc: JSONDocumentMeta;
   path?: string;
   minimal?: boolean;
 }) {

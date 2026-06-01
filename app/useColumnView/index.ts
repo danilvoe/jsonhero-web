@@ -21,6 +21,8 @@ export interface ColumnViewNode {
   longTitle?: string;
   icon?: IconComponent;
   children: ColumnViewNode[];
+  /** Set on lazy nodes before children are materialized. */
+  hasChildren?: boolean;
 }
 
 export type ColumnViewOptions = {
@@ -99,7 +101,7 @@ export function useColumnView({
         let changes = columnViewReducer(state, action);
 
         // Don't allow the client modify history actions
-        if (action.type === "GO") {
+        if (action.type === "GO" || action.type === "UPDATE_NODE_TABLE") {
           return changes;
         }
 
@@ -150,6 +152,10 @@ export function useColumnView({
           rootNodeId: rootNode.id,
         }
   );
+
+  useEffect(() => {
+    dispatch({ type: "UPDATE_NODE_TABLE", nodeTable });
+  }, [nodeTable]);
 
   const api = useMemo<ColumnViewAPI>(() => {
     return {
@@ -259,11 +265,17 @@ export type GoAction = {
   direction: -1 | 1;
 };
 
+export type UpdateNodeTableAction = {
+  type: "UPDATE_NODE_TABLE";
+  nodeTable: NodeTable;
+};
+
 export type ColumnViewAction =
   | SetSelectedNodeIdAction
   | MoveSelectedNodeAction
   | ResetSelectionNodeAction
-  | GoAction;
+  | GoAction
+  | UpdateNodeTableAction;
 
 function goBackAction(): GoAction {
   return {
@@ -444,6 +456,12 @@ function columnViewReducer(
       }
 
       break;
+    }
+    case "UPDATE_NODE_TABLE": {
+      return {
+        ...state,
+        nodeTable: action.nodeTable,
+      };
     }
     default:
       return state;

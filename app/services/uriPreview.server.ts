@@ -37,9 +37,6 @@ async function getOpenGraphNinja(link: string): Promise<PreviewResult> {
   } else {
     const body: OpenGraphPreviewDataError = await response.json();
 
-    // Log the error instead of propagating the internal error to the UI
-    console.log(`OpenGraph Ninja failed to get preview data: ${body.error}`);
-
     return { error: "No preview available for this URL" };
   }
 }

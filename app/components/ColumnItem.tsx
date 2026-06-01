@@ -2,7 +2,7 @@ import { ChevronRightIcon } from "@heroicons/react/outline";
 import { inferType } from "@jsonhero/json-infer-types";
 import { JSONHeroPath } from "@jsonhero/path";
 import { Mono } from "./Primitives/Mono";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { ColumnViewNode } from "~/useColumnView";
 import { colorForItemAtPath } from "~/utilities/colors";
 import { Body } from "./Primitives/Body";
@@ -27,9 +27,11 @@ function ColumnItemElement({
   onClick,
 }: ColumnItemProps) {
   const htmlElement = useRef<HTMLDivElement>(null);
+  const suppressNextClickRef = useRef(false);
+  const [isEditingValue, setIsEditingValue] = useState(false);
 
-  const showArrow = item.children.length > 0;
-  const isLeafNode = item.children.length === 0;
+  const showArrow = item.children.length > 0 || item.hasChildren === true;
+  const isLeafNode = !showArrow;
 
   const leafInfo = useMemo(() => {
     if (!isLeafNode || !item.subtitle) {
@@ -69,7 +71,18 @@ function ColumnItemElement({
   return (
     <div
       className={`flex h-9 items-center justify-items-stretch mx-1 px-1 py-1 my-1 rounded-sm ${stateStyle}`}
-      onClick={() => onClick && onClick(item.id)}
+      onClick={() => {
+        if (suppressNextClickRef.current) {
+          suppressNextClickRef.current = false;
+          return;
+        }
+
+        if (isEditingValue) {
+          return;
+        }
+
+        onClick?.(item.id);
+      }}
       ref={htmlElement}
     >
       <div className="w-4 flex-none flex-col justify-items-center">
@@ -108,6 +121,10 @@ function ColumnItemElement({
                   info={leafInfo}
                   compact={true}
                   className="truncate"
+                  onEditingChange={setIsEditingValue}
+                  onCommitAttempt={() => {
+                    suppressNextClickRef.current = true;
+                  }}
                 />
               ) : (
                 item.subtitle

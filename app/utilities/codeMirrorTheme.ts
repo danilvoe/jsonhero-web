@@ -29,7 +29,8 @@ export function darkTheme(): Extension {
 
       ".cm-content": {
         caretColor: cursor,
-        fontFamily: "MonoLisa, monospace",
+        fontFamily:
+          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
         fontSize: "14px",
       },
 
@@ -171,7 +172,8 @@ export function lightTheme(): Extension {
 
       ".cm-content": {
         caretColor: cursor,
-        fontFamily: "MonoLisa, monospace",
+        fontFamily:
+          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
         fontSize: "14px",
       },
 

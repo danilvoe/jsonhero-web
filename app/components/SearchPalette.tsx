@@ -41,7 +41,6 @@ export function SearchPalette({
     "esc",
     (e) => {
       e.preventDefault();
-      searchApi.reset();
       onClose?.();
     },
     [onClose]
@@ -78,13 +77,13 @@ export function SearchPalette({
 
   const cb = useCombobox({
     items: searchState.results ?? [],
+    inputValue: searchState.query ?? "",
     stateReducer: comboboxReducer,
     circularNavigation: false,
     scrollIntoView: () => {},
     onSelectedItemChange: ({ selectedItem }) => {
       if (selectedItem) {
         onSelect?.(selectedItem.item);
-        searchApi.reset();
       }
     },
     onHighlightedIndexChange: ({ highlightedIndex }) =>
@@ -124,11 +123,25 @@ export function SearchPalette({
         </label>
         <div className="flex flex-col mt-4 mb-2">
           <div className="results flex">
-            {searchState.status !== "idle" &&
+            {searchState.status === "initializing" && (
+              <div className="results-loading flex">
+                <LoadingIcon className="animate-spin h-5 w-5 mr-1"></LoadingIcon>
+                <Body className="text-slate-400">Indexing…</Body>
+              </div>
+            )}
+            {searchState.status === "searching" &&
               (!searchState.results || searchState.results.length === 0) && (
                 <div className="results-loading flex">
                   <LoadingIcon className="animate-spin h-5 w-5 mr-1"></LoadingIcon>
-                  <Body className="text-slate-400">Loading…</Body>
+                  <Body className="text-slate-400">Searching…</Body>
+                </div>
+              )}
+            {searchState.status === "searching" &&
+              searchState.results &&
+              searchState.results.length > 0 && (
+                <div className="results-loading flex">
+                  <LoadingIcon className="animate-spin h-5 w-5 mr-1"></LoadingIcon>
+                  <Body className="text-slate-400">Updating…</Body>
                 </div>
               )}
             {searchState.results && searchState.results.length > 0 && (

@@ -1,0 +1,20 @@
+diff --git a/node_modules/@jsonhero/fuzzy-json-search/lib/index.d.ts b/node_modules/@jsonhero/fuzzy-json-search/lib/index.d.ts
+index 61e6937..a1f709d 100644
+--- a/node_modules/@jsonhero/fuzzy-json-search/lib/index.d.ts
++++ b/node_modules/@jsonhero/fuzzy-json-search/lib/index.d.ts
+@@ -1,3 +1,3 @@
+ export { JSONHeroSearch, JSONHeroSearchOptions, JSONHeroSearchAccessor, JSONHeroSearchFormatter, } from "./JSONHeroSearch";
+ export { search, SearchResult } from "./search";
+-export { ItemScore } from "./fuzzyScoring";
++export { ItemScore, PreparedQuery, prepareQuery, scoreItemFuzzy, compareItemsByFuzzyScore, } from "./fuzzyScoring";
+diff --git a/node_modules/@jsonhero/fuzzy-json-search/lib/index.js b/node_modules/@jsonhero/fuzzy-json-search/lib/index.js
+index 71e6602..d3d09be 100644
+--- a/node_modules/@jsonhero/fuzzy-json-search/lib/index.js
++++ b/node_modules/@jsonhero/fuzzy-json-search/lib/index.js
+@@ -1483,3 +1483,6 @@ function defaultFormatter(value) {
+ exports.JSONHeroSearch = JSONHeroSearch;
+ exports.JSONHeroSearchAccessor = JSONHeroSearchAccessor;
+ exports.search = search;
++exports.prepareQuery = prepareQuery;
++exports.scoreItemFuzzy = scoreItemFuzzy;
++exports.compareItemsByFuzzyScore = compareItemsByFuzzyScore;

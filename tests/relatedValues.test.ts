@@ -171,8 +171,6 @@ Array [
 
     const result = calculateRelatedValuesGroups(path, json);
 
-    console.log(result);
-
     expect(result).toStrictEqual([
       {
         value: "1609937654",

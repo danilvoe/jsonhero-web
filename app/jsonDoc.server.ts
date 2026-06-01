@@ -1,6 +1,18 @@
 import { customRandom } from "nanoid";
-import { putDocument, updateDocumentValue } from "./documentKv.server";
+import {
+  documentBodyKey,
+  legacyDocumentBodyKey,
+} from "./documentKeys.server";
+import {
+  deleteDocumentKeys,
+  putDocument,
+  putDocumentBody,
+  updateDocumentBody,
+  updateDocumentValue,
+} from "./documentKv.server";
 import safeFetch from "./utilities/safeFetch";
+import { LARGE_DOC_CLIENT_BYTES } from "./uploadLimits";
+import { assertValidJson, jsonByteLength } from "./utilities/validateJson";
 import createFromRawXml from "./utilities/xml/createFromRawXml";
 import isXML from "./utilities/xml/isXML";
 
@@ -10,15 +22,24 @@ type BaseJsonDocument = {
   readOnly: boolean;
 };
 
-export type RawJsonDocument = BaseJsonDocument & {
+/** Metadata stored in KV (no JSON body). */
+export type RawJsonDocumentMeta = BaseJsonDocument & {
   type: "raw";
-  contents: string;
+  contentBytes: number;
 };
 
 export type UrlJsonDocument = BaseJsonDocument & {
   type: "url";
   url: string;
 };
+
+/** Full raw document including body (API responses, legacy reads). */
+export type RawJsonDocument = RawJsonDocumentMeta & {
+  contents: string;
+};
+
+export type JSONDocumentMeta = RawJsonDocumentMeta | UrlJsonDocument;
+export type JSONDocument = RawJsonDocument | UrlJsonDocument;
 
 export type CreateJsonOptions = {
   ttl?: number;
@@ -27,7 +48,30 @@ export type CreateJsonOptions = {
   metadata?: any;
 };
 
-export type JSONDocument = RawJsonDocument | UrlJsonDocument;
+type LegacyStoredRawDocument = BaseJsonDocument & {
+  type: "raw";
+  contents?: string;
+  contentBytes?: number;
+};
+
+function isLegacyRawDocument(
+  doc: LegacyStoredRawDocument
+): doc is LegacyStoredRawDocument & { contents: string } {
+  return doc.type === "raw" && typeof doc.contents === "string";
+}
+
+function toRawMeta(
+  doc: LegacyStoredRawDocument & { contents: string }
+): RawJsonDocumentMeta {
+  return {
+    id: doc.id,
+    title: doc.title,
+    readOnly: doc.readOnly,
+    type: "raw",
+    contentBytes:
+      doc.contentBytes ?? jsonByteLength(doc.contents),
+  };
+}
 
 export async function createFromUrlOrRawJson(
   urlOrJson: string,
@@ -41,8 +85,6 @@ export async function createFromUrlOrRawJson(
     return createFromRawJson("Untitled", urlOrJson);
   }
 
-  // Wrapper for createFromRawJson to handle XML
-  // TODO ? change from urlOrJson to urlOrJsonOrXml
   if (isXML(urlOrJson)) {
     return createFromRawXml("Untitled", urlOrJson);
   }
@@ -65,7 +107,7 @@ export async function createFromUrl(
 
   const docId = createId();
 
-  const doc: JSONDocument = {
+  const doc: UrlJsonDocument = {
     id: docId,
     type: <const>"url",
     url: url.href,
@@ -85,42 +127,111 @@ export async function createFromRawJson(
   filename: string,
   contents: string,
   options?: CreateJsonOptions
-): Promise<JSONDocument> {
-  const docId = createId();
-  const doc: JSONDocument = {
-    id: docId,
-    type: <const>"raw",
-    contents,
-    title: filename,
-    readOnly: options?.readOnly ?? false,
-  };
+): Promise<RawJsonDocument> {
+  const contentBytes = jsonByteLength(contents);
 
-  JSON.parse(contents);
-  await putDocument(docId, JSON.stringify(doc), {
-    ttl: options?.ttl,
-    metadata: options?.metadata,
+  assertValidJson(contents, {
+    validateSyntax: contentBytes <= LARGE_DOC_CLIENT_BYTES,
   });
 
-  return doc;
+  const docId = createId();
+  const meta: RawJsonDocumentMeta = {
+    id: docId,
+    type: <const>"raw",
+    title: filename,
+    readOnly: options?.readOnly ?? false,
+    contentBytes,
+  };
+
+  const putOptions = {
+    ttl: options?.ttl,
+    metadata: options?.metadata,
+  };
+
+  await Promise.all([
+    putDocument(docId, JSON.stringify(meta), putOptions),
+    putDocumentBody(docId, contents, putOptions),
+  ]);
+
+  return { ...meta, contents };
 }
 
+export async function getDocumentMeta(
+  slug: string
+): Promise<JSONDocumentMeta | undefined> {
+  const stored = await DOCUMENTS.get(slug);
+
+  if (!stored) {
+    return undefined;
+  }
+
+  const parsed = JSON.parse(stored) as JSONDocumentMeta | LegacyStoredRawDocument;
+
+  if (parsed.type === "raw" && isLegacyRawDocument(parsed)) {
+    return toRawMeta(parsed);
+  }
+
+  return parsed as JSONDocumentMeta;
+}
+
+/** @deprecated Prefer getDocumentMeta + getDocumentContents for large docs. */
 export async function getDocument(
   slug: string
 ): Promise<JSONDocument | undefined> {
-  const doc = await DOCUMENTS.get(slug);
+  const meta = await getDocumentMeta(slug);
 
-  if (!doc) return;
+  if (!meta) {
+    return undefined;
+  }
 
-  return JSON.parse(doc);
+  if (meta.type === "url") {
+    return meta;
+  }
+
+  const contents = await getDocumentContents(slug);
+
+  if (contents == null) {
+    return undefined;
+  }
+
+  return { ...meta, contents };
+}
+
+export async function getDocumentContents(
+  slug: string
+): Promise<string | undefined> {
+  const body =
+    (await DOCUMENTS.get(documentBodyKey(slug))) ??
+    (await DOCUMENTS.get(legacyDocumentBodyKey(slug)));
+
+  if (body != null) {
+    return body;
+  }
+
+  const stored = await DOCUMENTS.get(slug);
+
+  if (!stored) {
+    return undefined;
+  }
+
+  const parsed = JSON.parse(stored) as LegacyStoredRawDocument;
+
+  if (isLegacyRawDocument(parsed)) {
+    return parsed.contents;
+  }
+
+  return undefined;
 }
 
 export async function updateDocument(
   slug: string,
   title: string
-): Promise<JSONDocument | undefined> {
-  const document = await getDocument(slug);
+): Promise<JSONDocumentMeta | undefined> {
+  const document = await getDocumentMeta(slug);
 
-  if (!document) return;
+  if (!document) {
+    return undefined;
+  }
 
   const updated = { ...document, title };
 
@@ -132,10 +243,12 @@ export async function updateDocument(
 export async function updateDocumentContents(
   slug: string,
   contents: string
-): Promise<JSONDocument | undefined> {
-  const document = await getDocument(slug);
+): Promise<RawJsonDocument | undefined> {
+  const document = await getDocumentMeta(slug);
 
-  if (!document) return;
+  if (!document) {
+    return undefined;
+  }
 
   if (document.readOnly) {
     throw new Error("Document is read-only");
@@ -145,17 +258,21 @@ export async function updateDocumentContents(
     throw new Error("Only uploaded JSON documents can be saved");
   }
 
-  JSON.parse(contents);
+  assertValidJson(contents);
 
-  const updated: RawJsonDocument = { ...document, contents };
+  const contentBytes = jsonByteLength(contents);
+  const updatedMeta: RawJsonDocumentMeta = { ...document, contentBytes };
 
-  await updateDocumentValue(slug, JSON.stringify(updated));
+  await Promise.all([
+    updateDocumentValue(slug, JSON.stringify(updatedMeta)),
+    updateDocumentBody(slug, contents),
+  ]);
 
-  return updated;
+  return { ...updatedMeta, contents };
 }
 
 export async function deleteDocument(slug: string): Promise<void> {
-  await DOCUMENTS.delete(slug);
+  await deleteDocumentKeys(slug);
 }
 
 function createId(): string {

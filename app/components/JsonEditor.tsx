@@ -12,12 +12,20 @@ import { JSONHeroPath } from "@jsonhero/path";
 import { usePreferences } from "~/components/PreferencesProvider";
 import { debounce } from "lodash-es";
 import { Body } from "./Primitives/Body";
-
-function stringifyJson(json: unknown, indent: number): string {
-  return jsonMap.stringify(json, null, indent).json;
-}
+import { useJsonDoc } from "~/hooks/useJsonDoc";
+import { isLargeDocument } from "~/uploadLimits";
+import { serializeJson } from "~/utilities/serializeJson";
 
 export function JsonEditor() {
+  const { doc } = useJsonDoc();
+  const isLarge = isLargeDocument(doc);
+
+  const stringifyJson = useCallback(
+    (value: unknown, indent: number) =>
+      serializeJson(value, indent, { compact: isLarge }),
+    [isLarge]
+  );
+
   const [json] = useJson();
   const {
     updateJson,
@@ -45,7 +53,7 @@ export function JsonEditor() {
     }
 
     setEditorText(stringifyJson(json, indent));
-  }, [jsonVersion, json, indent]);
+  }, [jsonVersion, json, indent, stringifyJson]);
 
   const debouncedParse = useMemo(
     () =>
@@ -143,13 +151,22 @@ export function JsonEditor() {
 
   return (
     <div className="flex flex-col h-full">
+      {isLarge ? (
+        <div className="border-b border-slate-700 bg-slate-800/80 px-3 py-2">
+          <Body className="text-slate-300 text-sm">
+            Large documents open in read-only mode in the editor to keep the
+            browser responsive. Use column or tree view to explore and edit
+            smaller sections via save when available.
+          </Body>
+        </div>
+      ) : null}
       <CodeEditor
         language="json"
         content={editorText}
-        readOnly={false}
-        onChange={handleChange}
-        onUpdate={onUpdate}
-        selection={selection}
+        readOnly={isLarge}
+        onChange={isLarge ? undefined : handleChange}
+        onUpdate={isLarge ? undefined : onUpdate}
+        selection={isLarge ? undefined : selection}
       />
       {parseError && (
         <div className="px-3 py-2 bg-red-100 border-t border-red-300 dark:bg-red-900/40 dark:border-red-700">

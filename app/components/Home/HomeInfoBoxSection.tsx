@@ -146,7 +146,7 @@ function SampleJSONPreview({
         title: "Sample",
         type: "raw",
         readOnly: false,
-        contents: "",
+        contentBytes: 0,
       }}
       path={initialSelection}
     >

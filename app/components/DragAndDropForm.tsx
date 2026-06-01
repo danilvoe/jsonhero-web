@@ -1,90 +1,141 @@
 import { ArrowCircleDownIcon } from "@heroicons/react/outline";
-import { useCallback, useRef } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Form, useSubmit } from "remix";
-import invariant from "tiny-invariant";
+import { LoadingIcon } from "~/components/Icons/LoadingIcon";
+import { MAX_JSON_UPLOAD_BYTES } from "~/uploadLimits";
+import {
+  uploadJsonFile,
+  type UploadPhase,
+} from "~/utilities/uploadJsonFile";
+import { formatBytes } from "~/utilities/formatter";
+
+const phaseLabels: Record<UploadPhase, string> = {
+  reading: "Reading file…",
+  uploading: "Uploading to server…",
+  opening: "Opening document…",
+};
 
 export function DragAndDropForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const filenameInputRef = useRef<HTMLInputElement>(null);
-  const rawJsonInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState<UploadPhase>("reading");
+  const [uploadPercent, setUploadPercent] = useState(0);
 
-  const submit = useSubmit();
+  const onDrop = useCallback((acceptedFiles: Array<File>) => {
+    if (acceptedFiles.length === 0) {
+      return;
+    }
 
-  const onDrop = useCallback(
-    (acceptedFiles: Array<File>) => {
-      if (!formRef.current || !filenameInputRef.current) {
+    const firstFile = acceptedFiles[0];
+
+    setError(null);
+    setIsUploading(true);
+    setUploadPhase("reading");
+    setUploadPercent(0);
+
+    uploadJsonFile(firstFile, {
+      onProgress: ({ phase, percent }) => {
+        setUploadPhase(phase);
+        setUploadPercent(percent);
+      },
+    }).catch((err: unknown) => {
+      if (err instanceof DOMException && err.name === "AbortError") {
         return;
       }
 
-      if (acceptedFiles.length === 0) {
+      const message =
+        err instanceof Error ? err.message : "Upload failed. Please try again.";
+      setError(message);
+      setIsUploading(false);
+      setUploadPercent(0);
+    });
+  }, []);
+
+  const onDropRejected = useCallback(
+    (fileRejections: Array<{ errors: Array<{ code: string }> }>) => {
+      const rejection = fileRejections[0];
+      const isTooLarge = rejection?.errors.some(
+        (e) => e.code === "file-too-large"
+      );
+
+      if (isTooLarge) {
+        setError(
+          `File is too large. Maximum size is ${formatBytes(MAX_JSON_UPLOAD_BYTES)}.`
+        );
         return;
       }
 
-      const firstFile = acceptedFiles[0];
-
-      const reader = new FileReader();
-
-      reader.onabort = () => console.log("file reading was aborted");
-      reader.onerror = () => console.log("file reading has failed");
-      reader.onload = () => {
-        if (reader.result == null) {
-          return;
-        }
-
-        let jsonValue: string | undefined = undefined;
-
-        if (typeof reader.result === "string") {
-          jsonValue = reader.result;
-        } else {
-          const decoder = new TextDecoder("utf-8");
-          jsonValue = decoder.decode(reader.result);
-        }
-
-        invariant(rawJsonInputRef.current, "rawJsonInputRef is null");
-        invariant(jsonValue, "jsonValue is undefined");
-
-        rawJsonInputRef.current.value = jsonValue;
-
-        submit(formRef.current);
-      };
-      reader.readAsArrayBuffer(firstFile);
-      filenameInputRef.current.value = firstFile.name;
+      setError("Please upload a JSON file (.json).");
     },
-    [formRef.current, filenameInputRef.current, rawJsonInputRef.current]
+    []
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDropAccepted: onDrop,
+    onDropRejected,
     maxFiles: 1,
-    maxSize: 1024 * 1024 * 1,
+    maxSize: MAX_JSON_UPLOAD_BYTES,
     multiple: false,
-    accept: "application/json",
+    disabled: isUploading,
+    accept: "application/json, text/json, text/plain, .json",
   });
 
   return (
-    <Form method="post" action="/actions/createFromFile" ref={formRef}>
+    <div>
       <div
         {...getRootProps()}
-        className="block min-w-[300px] cursor-pointer rounded-md border-2 border-dashed border-slate-600 bg-slate-900/40 p-4 text-base text-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+        className="block min-w-[300px] cursor-pointer rounded-md border-2 border-dashed border-slate-600 bg-slate-900/40 p-4 text-base text-slate-300 focus:border-indigo-500 focus:ring-indigo-500 disabled:cursor-wait disabled:opacity-60"
       >
         <input {...getInputProps()} />
         <div className="flex items-center">
-          <ArrowCircleDownIcon
-            className={`mr-3 inline h-6 w-6 ${
-              isDragActive ? "text-lime-500" : ""
-            }`}
-          />
+          {isUploading ? (
+            <LoadingIcon className="mr-3 inline h-6 w-6 shrink-0 animate-spin" />
+          ) : (
+            <ArrowCircleDownIcon
+              className={`mr-3 inline h-6 w-6 shrink-0 ${
+                isDragActive ? "text-lime-500" : ""
+              }`}
+            />
+          )}
           <p className={`${isDragActive ? "text-lime-500" : ""}`}>
-            {isDragActive
+            {isUploading
+              ? phaseLabels[uploadPhase]
+              : isDragActive
               ? "Now drop to open it…"
               : "Drop a JSON file here, or click to select"}
           </p>
         </div>
-
-        <input type="hidden" name="filename" ref={filenameInputRef} />
-        <input type="hidden" name="rawJson" ref={rawJsonInputRef} />
+        <p className="mt-2 text-sm text-slate-400">
+          Up to {formatBytes(MAX_JSON_UPLOAD_BYTES)} per file
+        </p>
       </div>
-    </Form>
+
+      {isUploading ? (
+        <div className="mt-3" aria-live="polite" aria-busy="true">
+          <div className="mb-1 flex items-center justify-between text-sm text-slate-400">
+            <span>{phaseLabels[uploadPhase]}</span>
+            <span>{uploadPercent}%</span>
+          </div>
+          <div
+            className="h-2 overflow-hidden rounded-full bg-slate-700"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={uploadPercent}
+          >
+            <div
+              className="h-full rounded-full bg-lime-500 transition-[width] duration-150 ease-out"
+              style={{ width: `${uploadPercent}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p className="mt-2 text-sm text-red-400" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

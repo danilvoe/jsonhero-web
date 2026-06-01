@@ -10,6 +10,8 @@ export type EditableScalarValueProps = {
   className?: string;
   compact?: boolean;
   onEditingChange?: (editing: boolean) => void;
+  /** Fired when edit ends via blur/Enter, before the click that caused blur. */
+  onCommitAttempt?: () => void;
 };
 
 export function isEditableScalar(info: JSONValueType): boolean {
@@ -31,6 +33,7 @@ export function EditableScalarValue({
   className = "",
   compact = false,
   onEditingChange,
+  onCommitAttempt,
 }: EditableScalarValueProps) {
   const { updateValueAtPath } = useJsonEdit();
   const [isEditing, setIsEditing] = useState(false);
@@ -68,6 +71,8 @@ export function EditableScalarValue({
   }, [info]);
 
   const commitEditing = useCallback(() => {
+    onCommitAttempt?.();
+
     try {
       const value = parseDraftValue(info, draft);
       updateValueAtPath(path, value);
@@ -80,7 +85,7 @@ export function EditableScalarValue({
         setError("Invalid value");
       }
     }
-  }, [draft, info, path, updateValueAtPath]);
+  }, [draft, info, onCommitAttempt, path, updateValueAtPath]);
 
   if (!isEditableScalar(info)) {
     return <span className={className}>{formatRawValue(info)}</span>;
@@ -92,7 +97,11 @@ export function EditableScalarValue({
     } w-full rounded-sm border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-lime-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100`;
 
     return (
-      <div className={className} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={className}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {info.name === "bool" ? (
           <select
             className={inputClassName}

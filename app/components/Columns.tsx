@@ -8,7 +8,7 @@ import {
 import { ColumnDefinition } from "~/useColumnView";
 import { BlankColumn } from "./BlankColumn";
 import { Column } from "./Column";
-import { ColumnItem } from "./ColumnItem";
+import { VirtualizedColumnItems } from "./VirtualizedColumnItems";
 
 function ColumnsElement({ columns }: { columns: ColumnDefinition[] }) {
   const [json] = useJson();
@@ -39,18 +39,15 @@ function ColumnsElement({ columns }: { columns: ColumnDefinition[] }) {
               highlightedPath[highlightedPath.length - 2] === column.id
             }
           >
-            {column.items.map((item) => (
-              <ColumnItem
-                key={item.id}
-                item={item}
-                json={json}
-                isSelected={selectedPath.includes(item.id)}
-                isHighlighted={
-                  highlightedPath[highlightedPath.length - 1] === item.id
-                }
-                onClick={(id) => goToNodeId(id, "columnView")}
-              />
-            ))}
+            <VirtualizedColumnItems
+              items={column.items}
+              json={json}
+              isItemSelected={(id) => selectedPath.includes(id)}
+              isItemHighlighted={(id) =>
+                highlightedPath[highlightedPath.length - 1] === id
+              }
+              onClick={(id) => goToNodeId(id, "columnView")}
+            />
           </Column>
         );
       })}

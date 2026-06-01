@@ -3,12 +3,16 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
 import invariant from "tiny-invariant";
-import jsonMap from "json-source-map";
+import { useDocumentSourceText } from "~/hooks/useDocumentSourceText";
 import { useJson } from "~/hooks/useJson";
+import { useJsonDoc } from "~/hooks/useJsonDoc";
+import { isLargeDocument } from "~/uploadLimits";
+import { serializeJson } from "~/utilities/serializeJson";
 import { stableJson } from "~/utilities/stableJson";
 import { setValueAtPath } from "~/utilities/setValueAtPath";
 
@@ -31,37 +35,58 @@ const JsonEditContext = createContext<JsonEditContextType | undefined>(
 
 export function JsonEditProvider({ children }: { children: ReactNode }) {
   const [json, setJson] = useJson();
-  const initialJsonRef = useRef(stableJson(json));
-  const editorExportRef = useRef<(() => string) | null>(null);
+  const { doc } = useJsonDoc();
+  const isLarge = isLargeDocument(doc);
+  const documentSourceText = useDocumentSourceText();
+  const initialJsonRef = useRef(isLarge ? json : stableJson(json));
+  const sourceTextRef = useRef<string | null>(documentSourceText);
+  const editorExportRef = useRef<(() => string | undefined) | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [parseError, setParseErrorState] = useState<string | null>(null);
   const [jsonVersion, setJsonVersion] = useState(0);
+
+  useEffect(() => {
+    if (documentSourceText != null && documentSourceText.trim() !== "") {
+      sourceTextRef.current = documentSourceText;
+    }
+  }, [documentSourceText]);
+
+  const rememberSourceText = useCallback((text: string) => {
+    if (text.trim() !== "") {
+      sourceTextRef.current = text;
+    }
+  }, []);
 
   const bump = useCallback(() => {
     setJsonVersion((version) => version + 1);
   }, []);
 
+  const stabilize = useCallback(
+    (value: unknown) => (isLarge ? value : stableJson(value)),
+    [isLarge]
+  );
+
   const updateJson = useCallback(
     (parsed: unknown) => {
-      const stabilized = stableJson(parsed);
+      const stabilized = stabilize(parsed);
       setJson(stabilized);
       setIsDirty(true);
       setParseErrorState(null);
       bump();
     },
-    [setJson, bump]
+    [setJson, bump, stabilize]
   );
 
   const updateValueAtPath = useCallback(
     (path: string, value: unknown) => {
       const updated = setValueAtPath(json, path, value);
-      const stabilized = stableJson(updated);
+      const stabilized = stabilize(updated);
       setJson(stabilized);
       setIsDirty(true);
       setParseErrorState(null);
       bump();
     },
-    [json, setJson, bump]
+    [json, setJson, bump, stabilize]
   );
 
   const setParseError = useCallback(
@@ -78,7 +103,7 @@ export function JsonEditProvider({ children }: { children: ReactNode }) {
     bump();
   }, [setJson, bump]);
 
-  const registerEditorExport = useCallback((getter: () => string) => {
+  const registerEditorExport = useCallback((getter: () => string | undefined) => {
     editorExportRef.current = getter;
 
     return () => {
@@ -92,7 +117,7 @@ export function JsonEditProvider({ children }: { children: ReactNode }) {
     (indent: number) => {
       const editorText = editorExportRef.current?.();
 
-      if (editorText !== undefined) {
+      if (editorText != null && editorText.trim() !== "") {
         try {
           JSON.parse(editorText);
           return editorText;
@@ -101,16 +126,28 @@ export function JsonEditProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      return jsonMap.stringify(json, null, indent).json;
+      try {
+        const serialized = serializeJson(json, indent, { compact: isLarge });
+        rememberSourceText(serialized);
+        return serialized;
+      } catch {
+        const fallback = sourceTextRef.current;
+
+        if (fallback != null && fallback.trim() !== "") {
+          return fallback;
+        }
+
+        throw new Error("Cannot export JSON document");
+      }
     },
-    [json]
+    [json, rememberSourceText, isLarge]
   );
 
   const markSaved = useCallback(() => {
-    initialJsonRef.current = stableJson(json);
+    initialJsonRef.current = stabilize(json);
     setIsDirty(false);
     setParseErrorState(null);
-  }, [json]);
+  }, [json, stabilize]);
 
   return (
     <JsonEditContext.Provider
