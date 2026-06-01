@@ -1,6 +1,7 @@
 import { json, LoaderFunction } from "remix";
 import invariant from "tiny-invariant";
 import { getDocument } from "~/jsonDoc.server";
+import safeFetch from "~/utilities/safeFetch";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   invariant(params.id, "expected params.id");
@@ -14,7 +15,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   }
 
   if (doc.type == "url") {
-    const jsonResponse = await fetch(doc.url);
+    const jsonResponse = await safeFetch(doc.url);
     return jsonResponse.json();
   } else {
     return json(JSON.parse(doc.contents));

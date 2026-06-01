@@ -4,8 +4,10 @@ import { load } from "fathom-client";
 
 hydrate(<RemixBrowser />, document);
 
-load("ROBFNTET", {
-  spa: "history",
-  excludedDomains: ["localhost"],
-  includedDomains: ["jsonhero.io"],
-});
+if (document.documentElement.dataset.offline !== "true") {
+  load("ROBFNTET", {
+    spa: "history",
+    excludedDomains: ["localhost"],
+    includedDomains: ["jsonhero.io"],
+  });
+}

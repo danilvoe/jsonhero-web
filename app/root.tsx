@@ -43,6 +43,7 @@ export const meta: MetaFunction = ({ location }) => {
 import styles from "./tailwind.css";
 import { getThemeSession } from "./theme.server";
 import { getStarCount } from "./services/github.server";
+import { isOffline } from "~/utilities/isOffline";
 import { StarCountProvider } from "./components/StarCountProvider";
 import { PreferencesProvider } from "~/components/PreferencesProvider";
 
@@ -54,6 +55,7 @@ export type LoaderData = {
   theme?: Theme;
   starCount?: number;
   themeOverride?: Theme;
+  offline?: boolean;
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -65,6 +67,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     theme: themeSession.getTheme(),
     starCount,
     themeOverride,
+    offline: isOffline(),
   };
 
   return data;
@@ -79,11 +82,15 @@ function getThemeFromRequest(request: Request): Theme | undefined {
   return undefined;
 }
 
-function App() {
+function App({ offline }: { offline?: boolean }) {
   const [theme] = useTheme();
 
   return (
-    <html lang="en" className={clsx(theme)}>
+    <html
+      lang="en"
+      className={clsx(theme)}
+      data-offline={offline ? "true" : undefined}
+    >
       <head>
         <Meta />
         <meta charSet="utf-8" />
@@ -101,7 +108,8 @@ function App() {
 }
 
 export default function AppWithProviders() {
-  const { theme, starCount, themeOverride } = useLoaderData<LoaderData>();
+  const { theme, starCount, themeOverride, offline } =
+    useLoaderData<LoaderData>();
 
   const location = useLocation();
 
@@ -115,7 +123,7 @@ export default function AppWithProviders() {
     >
       <PreferencesProvider>
         <StarCountProvider starCount={starCount}>
-          <App />
+          <App offline={offline} />
         </StarCountProvider>
       </PreferencesProvider>
     </ThemeProvider>

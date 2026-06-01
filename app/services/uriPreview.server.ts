@@ -6,6 +6,7 @@ import {
   OpenGraphPreviewDataError
 } from "~/components/Preview/Types/preview.types";
 import safeFetch from "~/utilities/safeFetch";
+import { isOffline } from "~/utilities/isOffline";
 import { fetchProxy } from "./apihero.server";
 
 const imageContentTypes = [
@@ -44,6 +45,10 @@ async function getOpenGraphNinja(link: string): Promise<PreviewResult> {
 }
 
 export async function getUriPreview(uri: string): Promise<PreviewResult> {
+  if (isOffline()) {
+    return { error: "URL previews are disabled in offline mode" };
+  }
+
   const url = rewriteUrl(uri);
 
   const head = await headUri(url.href);

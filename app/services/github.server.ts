@@ -1,4 +1,10 @@
+import { isOffline } from "~/utilities/isOffline";
+
 export async function getStarCount(): Promise<number | undefined> {
+  if (isOffline()) {
+    return;
+  }
+
   try {
     const response = await fetch(
       `https://api.github.com/repos/triggerdotdev/jsonhero-web`,

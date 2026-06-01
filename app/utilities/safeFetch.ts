@@ -1,7 +1,15 @@
+import { isOffline } from "./isOffline";
+
 export default function safeFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
+  if (isOffline()) {
+    return Promise.reject(
+      new Error("Outbound requests are disabled in offline mode")
+    );
+  }
+
   return fetch(url, {
     ...options,
     headers: {
