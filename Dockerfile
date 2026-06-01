@@ -9,4 +9,4 @@ RUN npm install
 RUN echo "SESSION_SECRET=abc123" > .env
 RUN npm run build
 
-CMD npm start
+CMD npm run start:docker
