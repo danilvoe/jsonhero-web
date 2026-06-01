@@ -1,8 +1,7 @@
 services:
   jsonhero:
     build: .
-    ports:
-      - "8787:8787"
+    network_mode: host
     environment:
       SESSION_SECRET: change-me-before-use
       OFFLINE: "true"
@@ -15,12 +14,6 @@ services:
         printf 'SESSION_SECRET=%s\nOFFLINE=true\n' "$$SESSION_SECRET" > .env
         exec npm run start:docker
     restart: unless-stopped
-    networks:
-      - jsonhero-internal
-
-networks:
-  jsonhero-internal:
-    internal: true
 
 volumes:
   jsonhero-kv:
