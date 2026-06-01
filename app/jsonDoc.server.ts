@@ -128,6 +128,31 @@ export async function updateDocument(
   return updated;
 }
 
+export async function updateDocumentContents(
+  slug: string,
+  contents: string
+): Promise<JSONDocument | undefined> {
+  const document = await getDocument(slug);
+
+  if (!document) return;
+
+  if (document.readOnly) {
+    throw new Error("Document is read-only");
+  }
+
+  if (document.type !== "raw") {
+    throw new Error("Only uploaded JSON documents can be saved");
+  }
+
+  JSON.parse(contents);
+
+  const updated: RawJsonDocument = { ...document, contents };
+
+  await DOCUMENTS.put(slug, JSON.stringify(updated));
+
+  return updated;
+}
+
 export async function deleteDocument(slug: string): Promise<void> {
   await DOCUMENTS.delete(slug);
 }
