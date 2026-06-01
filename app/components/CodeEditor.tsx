@@ -70,6 +70,21 @@ export function CodeEditor(opts: CodeEditorProps) {
     }
   }, [editor.current]);
 
+  useEffect(() => {
+    if (!view) {
+      return;
+    }
+
+    const current = view.state.doc.toString();
+    if (current === content) {
+      return;
+    }
+
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: content },
+    });
+  }, [view, content]);
+
   const setSelectionRef = useRef(false);
 
   useEffect(() => {

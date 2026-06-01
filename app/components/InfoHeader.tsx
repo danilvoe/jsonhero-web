@@ -10,6 +10,7 @@ import { concatenated, getHierarchicalTypes } from "~/utilities/dataType";
 import { formatRawValue } from "~/utilities/formatter";
 import { isNullable } from "~/utilities/nullable";
 import { CopyTextButton } from "./CopyTextButton";
+import { EditableScalarValue, isEditableScalar } from "./EditableScalarValue";
 import { Body } from "./Primitives/Body";
 import { LargeMono } from "./Primitives/LargeMono";
 import { Title } from "./Primitives/Title";
@@ -46,7 +47,7 @@ export function InfoHeader({ relatedPaths }: InfoHeaderProps) {
   }, [relatedPaths, json]);
 
   const [hovering, setHovering] = useState(false);
-  console.warn(selectedInfo);
+  const [isEditingValue, setIsEditingValue] = useState(false);
 
   const newPath = formattedSelectedInfo.replace(/^#/, "$").replace(/\//g, ".");
 
@@ -83,6 +84,12 @@ export function InfoHeader({ relatedPaths }: InfoHeaderProps) {
               <button onClick={handleClick}>
                 {formatRawValue(selectedInfo)}
               </button>
+            ) : isEditableScalar(selectedInfo) ? (
+              <EditableScalarValue
+                path={selectedNodeId}
+                info={selectedInfo}
+                onEditingChange={setIsEditingValue}
+              />
             ) : (
               formatRawValue(selectedInfo)
             )}
@@ -90,7 +97,7 @@ export function InfoHeader({ relatedPaths }: InfoHeaderProps) {
         )}
         <div
           className={`absolute top-1 right-0 flex justify-end h-full w-fit transition ${
-            hovering ? "opacity-100" : "opacity-0"
+            hovering && !isEditingValue ? "opacity-100" : "opacity-0"
           }`}
         >
           <CopyTextButton

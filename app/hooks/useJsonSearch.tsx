@@ -204,14 +204,13 @@ export function JsonSearchProvider({
       return;
     }
 
-    if (workerRef.current) {
-      return;
+    if (!workerRef.current) {
+      const worker = new Worker("/entry.worker.js");
+      worker.onmessage = handleWorkerMessage;
+      workerRef.current = worker;
     }
 
-    const worker = new Worker("/entry.worker.js");
-    worker.onmessage = handleWorkerMessage;
-
-    workerRef.current = worker;
+    reset();
 
     workerRef.current.postMessage({
       type: "initialize-index",
@@ -219,7 +218,7 @@ export function JsonSearchProvider({
         json,
       },
     });
-  }, [json, workerRef.current]);
+  }, [json, handleWorkerMessage, reset]);
 
   useEffect(() => {
     if (state.status !== "searching") {

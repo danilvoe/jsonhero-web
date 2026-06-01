@@ -1,9 +1,15 @@
 import { ChevronRightIcon } from "@heroicons/react/outline";
+import { inferType } from "@jsonhero/json-infer-types";
+import { JSONHeroPath } from "@jsonhero/path";
 import { Mono } from "./Primitives/Mono";
 import { memo, useEffect, useMemo, useRef } from "react";
 import { ColumnViewNode } from "~/useColumnView";
 import { colorForItemAtPath } from "~/utilities/colors";
 import { Body } from "./Primitives/Body";
+import {
+  EditableScalarValue,
+  isEditableScalar,
+} from "./EditableScalarValue";
 
 export type ColumnItemProps = {
   item: ColumnViewNode;
@@ -23,6 +29,16 @@ function ColumnItemElement({
   const htmlElement = useRef<HTMLDivElement>(null);
 
   const showArrow = item.children.length > 0;
+  const isLeafNode = item.children.length === 0;
+
+  const leafInfo = useMemo(() => {
+    if (!isLeafNode || !item.subtitle) {
+      return;
+    }
+
+    const value = new JSONHeroPath(item.id).first(json);
+    return inferType(value);
+  }, [isLeafNode, item.id, item.subtitle, json]);
 
   const stateStyle = useMemo<string>(() => {
     if (isHighlighted) {
@@ -71,15 +87,33 @@ function ColumnItemElement({
       <div className="flex flex-grow flex-shrink items-baseline justify-between truncate">
         <Body className="flex-grow flex-shrink-0 pl-3 pr-2 ">{item.title}</Body>
         {item.subtitle && (
-          <Mono
-            className={`truncate pr-1 transition duration-75 ${
-              isHighlighted
-                ? "text-gray-500 dark:text-slate-100"
-                : "text-gray-400 dark:text-gray-500"
-            }`}
+          <span
+            className="truncate pr-1"
+            onDoubleClick={(e: React.MouseEvent) => {
+              if (isLeafNode && leafInfo && isEditableScalar(leafInfo)) {
+                e.stopPropagation();
+              }
+            }}
           >
-            {item.subtitle}
-          </Mono>
+            <Mono
+              className={`truncate transition duration-75 ${
+                isHighlighted
+                  ? "text-gray-500 dark:text-slate-100"
+                  : "text-gray-400 dark:text-gray-500"
+              }`}
+            >
+              {isLeafNode && leafInfo && isEditableScalar(leafInfo) ? (
+                <EditableScalarValue
+                  path={item.id}
+                  info={leafInfo}
+                  compact={true}
+                  className="truncate"
+                />
+              ) : (
+                item.subtitle
+              )}
+            </Mono>
+          </span>
         )}
       </div>
 

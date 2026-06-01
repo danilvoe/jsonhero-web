@@ -15,6 +15,7 @@ import {
   calculateStablePath,
   firstChildToDescendant,
 } from "~/utilities/jsonColumnView";
+import { pathExists } from "~/utilities/setValueAtPath";
 import { useJson } from "./useJson";
 import { useJsonDoc } from "./useJsonDoc";
 
@@ -162,6 +163,16 @@ export function JsonColumnViewProvider({ children }: { children: ReactNode }) {
     state.selectedNodeId,
     state.highlightedNodeId,
   ]);
+
+  useEffect(() => {
+    if (!state.selectedNodeId) {
+      return;
+    }
+
+    if (!pathExists(json, state.selectedNodeId)) {
+      api.goToNodeId("$", "edit-recovery");
+    }
+  }, [json, state.selectedNodeId, api]);
 
   return (
     <JsonColumnViewAPIContext.Provider value={api}>

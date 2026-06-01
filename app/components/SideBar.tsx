@@ -2,7 +2,11 @@ import { TemplateIcon, CodeIcon, DownloadIcon } from "@heroicons/react/outline";
 import { TreeIcon } from "~/components/Icons/TreeIcon";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Link, useLocation, useNavigate } from "remix";
+import { useCallback } from "react";
 import { useJsonDoc } from "~/hooks/useJsonDoc";
+import { useJsonEdit } from "~/hooks/useJsonEdit";
+import { usePreferences } from "~/components/PreferencesProvider";
+import { downloadJsonFile } from "~/utilities/downloadJson";
 import { ToolTip } from "./ToolTip";
 import { Body } from "./Primitives/Body";
 import { ShortcutIcon } from "./Icons/ShortcutIcon";
@@ -10,6 +14,14 @@ import { useTheme } from "./ThemeProvider";
 
 export function SideBar() {
   const { doc } = useJsonDoc();
+  const { getExportText } = useJsonEdit();
+  const [preferences] = usePreferences();
+  const indent = preferences?.indent || 2;
+
+  const handleDownload = useCallback(() => {
+    const filename = doc.title?.trim() || `${doc.id}.json`;
+    downloadJsonFile(filename, getExportText(indent));
+  }, [doc.id, doc.title, getExportText, indent]);
 
   return (
     <div className="side-bar flex flex-col align-center justify-between h-full p-1 bg-slate-200 transition dark:bg-slate-800">
@@ -53,12 +65,12 @@ export function SideBar() {
       </ol>
       <ol>
         <SidebarLink>
-          <a href={`/j/${doc.id}.json`} target="_blank">
+          <button type="button" onClick={handleDownload} className="w-full h-full">
             <ToolTip arrow="left">
               <Body>Download</Body>
             </ToolTip>
             <DownloadIcon className="p-2 w-full h-full" />
-          </a>
+          </button>
         </SidebarLink>
       </ol>
     </div>

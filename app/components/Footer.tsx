@@ -11,6 +11,7 @@ import { ArrowRightIcon } from "@heroicons/react/outline";
 import TriggerDevLogoImageDark from "~/assets/images/trigger-dev-logo-dark.png";
 import TriggerDevLogoImage from "~/assets/images/trigger-dev-logo.png";
 import TriggerDevLogoTriangleImage from "~/assets/images/td-triangle.png";
+import { JsonEditStatus } from "~/components/JsonEditStatus";
 
 export function Footer() {
   const { minimal } = useJsonDoc();
@@ -47,6 +48,7 @@ export function Footer() {
           </Body>
         </li>
       </ol>
+      <JsonEditStatus />
       <ol className="flex gap-2 items-center h-full invisible md:visible">
         {minimal && (
           <li>
