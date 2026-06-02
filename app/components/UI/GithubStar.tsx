@@ -11,11 +11,7 @@ export function GithubStar({ className }: GithubStarProps) {
   const starCount = useStarCount();
 
   return (
-    <a
-      href="https://github.com/triggerdotdev/jsonhero-web"
-      target="_blank"
-      className="flex text-slate-700 opacity-90 transition hover:cursor-pointer hover:opacity-100"
-    >
+    <div className="flex text-slate-700 opacity-90 transition">
       <div className="flex items-center gap-1 pr-2 pl-1 py-1 bg-slate-300 rounded-l">
         <GithubIconSimple className="w-4 h-4 ml-1"></GithubIconSimple>
         <Body className="font-semibold text-slate-800 hidden md:block">
@@ -27,6 +23,6 @@ export function GithubStar({ className }: GithubStarProps) {
           <Body className="font-bold">{formatStarCount(starCount)}</Body>
         </div>
       )}
-    </a>
+    </div>
   );
 }

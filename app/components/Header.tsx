@@ -1,8 +1,5 @@
 import { ShareIcon, PlusIcon, TrashIcon } from "@heroicons/react/outline";
 import { DocumentTitle } from "./DocumentTitle";
-import { DiscordIconTransparent } from "./Icons/DiscordIconTransparent";
-import { EmailIconTransparent } from "./Icons/EmailIconTransparent";
-import { GithubStar } from "./UI/GithubStar";
 import { Logo } from "./Icons/Logo";
 import { Share } from "./Share";
 import { NewDocument } from "./NewDocument";
@@ -80,14 +77,6 @@ export function Header() {
           </PopoverContent>
         </Popover>
 
-        <li className="opacity-90 transition hover:cursor-pointer hover:opacity-100">
-          <GithubStar />
-        </li>
-        <li className="opacity-90 transition hover:cursor-pointer hover:opacity-100">
-          <a href="https://discord.gg/JtBAxBr2m3" target="_blank">
-            <DiscordIconTransparent />
-          </a>
-        </li>
       </ol>
     </header>
   );

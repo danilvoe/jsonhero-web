@@ -12,21 +12,13 @@ export function HomeApiHeroBanner() {
           <p className="mb-2 text-white md:text-xl text-sm">
             Make every API you use faster and more reliable.
           </p>
-          <a
-            href="https://apihero.run"
-            target="new"
-            className="flex items-center justify-center px-3 py-2 mt-2 text-center text-md md:text-xl text-slate-800 font-bold bg-lime-500 rounded shadow-md hover:bg-lime-400 transition"
-          >
+          <div className="flex items-center justify-center px-3 py-2 mt-2 text-center text-md md:text-xl text-slate-800 font-bold bg-lime-500 rounded shadow-md">
             Get started &rarr;
-          </a>
+          </div>
         </div>
-        <a
-          href="https://apihero.run"
-          target="new"
-          className="absolute md:relative -top-5 md:top-auto -right-[20rem] md:right-auto"
-        >
+        <div className="absolute md:relative -top-5 md:top-auto -right-[20rem] md:right-auto">
           <HomeApiHeroLaptop className="w-50 md:w-80 mb-2"></HomeApiHeroLaptop>
-        </a>
+        </div>
       </div>
     </div>
   );
