@@ -77,6 +77,16 @@ export function Header() {
           </PopoverContent>
         </Popover>
 
+        <li>
+          <a
+            href="http://srv-fh2.uofis.tec/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center py-1 bg-slate-200 text-slate-800 bg-opacity-90 text-base font-bold px-2 rounded uppercase hover:cursor-pointer hover:bg-opacity-100 transition"
+          >
+            FHv2
+          </a>
+        </li>
       </ol>
     </header>
   );
