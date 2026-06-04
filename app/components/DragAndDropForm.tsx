@@ -10,9 +10,9 @@ import {
 import { formatBytes } from "~/utilities/formatter";
 
 const phaseLabels: Record<UploadPhase, string> = {
-  reading: "Reading file…",
-  uploading: "Uploading to server…",
-  opening: "Opening document…",
+  reading: "Чтение файла…",
+  uploading: "Загрузка на сервер…",
+  opening: "Открытие документа…",
 };
 
 export function DragAndDropForm() {
@@ -65,7 +65,7 @@ export function DragAndDropForm() {
         return;
       }
 
-      setError("Please upload a JSON file (.json).");
+      setError("Пожалуйста, загрузите JSON-файл (.json).");
     },
     []
   );
@@ -101,8 +101,8 @@ export function DragAndDropForm() {
             {isUploading
               ? phaseLabels[uploadPhase]
               : isDragActive
-              ? "Now drop to open it…"
-              : "Drop a JSON file here, or click to select"}
+              ? "Теперь отпустить, чтобы открыть его…"
+              : "Перетащите JSON файл или нажмите для выбора"}
           </p>
         </div>
         <p className="mt-2 text-sm text-slate-400">

@@ -7,6 +7,51 @@ import cx from "~/utilities/classnames";
 import { Body } from "../Primitives/Body";
 import { Title } from "../Primitives/Title";
 
+const getDisplayTitle = (title: string, type: string): string => {
+  if (type === "error") return "Ошибка";
+  if (type === "success") return "Успешно";
+  return title;
+};
+
+const getDisplayMessage = (message: string): string => {
+  const messages: Record<string, string> = {
+    "Document not found": "Документ не найден",
+    "Document is read-only": "Документ только для чтения",
+    "Document deleted successfully": "Документ успешно удалён",
+  };
+  return messages[message] || message;
+};
+
+const getTypeStyles = (type: string) => {
+  const isError = type === "error";
+  const isSuccess = type === "success";
+
+  if (isError) {
+    return {
+      rootClass: "bg-rose-50 dark:bg-rose-100",
+      titleClass: "text-slate-900",
+      bodyClass: "text-slate-700",
+      icon: <ExclamationCircleIcon className="text-rose-700 h-7 w-7" />
+    };
+  }
+
+  if (isSuccess) {
+    return {
+      rootClass: "bg-slate-50 dark:bg-slate-900",
+      titleClass: "text-emerald-500",
+      bodyClass: "text-emerald-500",
+      icon: <InformationCircleIcon className="text-emerald-700 h-7 w-7" />
+    };
+  }
+
+  return {
+    rootClass: "bg-slate-50 dark:bg-slate-900",
+    titleClass: "text-slate-600",
+    bodyClass: "text-slate-600",
+    icon: <InformationCircleIcon className="text-slate-700 h-7 w-7" />
+  };
+};
+
 const Toast = ({
   message,
   title,
@@ -29,34 +74,20 @@ const Toast = ({
     "focus:outline-none focus-visible:ring focus-visible:ring-indigo-500 focus-visible:ring-opacity-75"
   );
 
-  const typeRootClasses =
-    type === "success"
-      ? "bg-slate-50 dark:bg-slate-900"
-      : "bg-rose-50 dark:bg-rose-100";
-
-  const titleClasses =
-    type === "success" ? "text-emerald-500" : "text-slate-900";
-  const bodyClasses =
-    type === "success" ? "text-emerald-500" : "text-slate-700";
-
-  const iconType =
-    type === "success" ? "text-emerald-700 h-7 w-7" : "text-rose-700 h-7 w-7";
+  const styles = getTypeStyles(type);
+  
+  const displayTitle = getDisplayTitle(title, type);
+  const displayMessage = getDisplayMessage(message);
 
   return (
     <ToastPrimitive.Provider duration={duration ?? 2500}>
-      <ToastPrimitive.Root className={cx(commonRootClasses, typeRootClasses)}>
+      <ToastPrimitive.Root className={cx(commonRootClasses, styles.rootClass)}>
         <div className="flex">
           <div className="flex-1 flex items-center">
-            <div className="flex px-4">
-              {type === "success" ? (
-                <InformationCircleIcon className={cx(iconType)} />
-              ) : (
-                <ExclamationCircleIcon className={cx(iconType)} />
-              )}
-            </div>
+            <div className="flex px-4">{styles.icon}</div>
             <div className="w-full radix">
-              <Title className={cx("-mb-0.5", titleClasses)}>{title}</Title>
-              <Body className={cx("mb-0.5", bodyClasses)}>{message}</Body>
+              <Title className={cx("-mb-0.5", styles.titleClass)}>{displayTitle}</Title>
+              <Body className={cx("mb-0.5", styles.bodyClass)}>{displayMessage}</Body>
             </div>
           </div>
         </div>

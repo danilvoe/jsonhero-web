@@ -245,7 +245,7 @@ function uploadSmallFile(
       try {
         JSON.parse(jsonValue);
       } catch {
-        reject(new Error("The file does not contain valid JSON."));
+        reject(new Error("Файл не содержит допустимого JSON"));
         return;
       }
 

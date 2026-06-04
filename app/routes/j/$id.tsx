@@ -53,7 +53,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   const doc = await getDocumentMeta(params.id);
 
   if (!doc) {
-    throw new Response("Not Found", {
+    throw new Response("Не найдено", {
       status: 404,
     });
   }
@@ -71,7 +71,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 
     if (!jsonResponse.ok) {
       const jsonResponseText = await jsonResponse.text();
-      const error = `Failed to fetch ${doc.url}. HTTP status: ${jsonResponse.status} (${jsonResponseText}})`;
+      const error = `Failed to fetch ${doc.url}. HTTP status: ${jsonResponse.status} (${jsonResponseText})`;
       console.error(error);
 
       throw new Response(error, {
@@ -104,7 +104,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     const contents = await getDocumentContents(params.id);
 
     if (contents == null) {
-      throw new Response("Not Found", {
+      throw new Response("Не найдено", {
         status: 404,
       });
     }
@@ -134,7 +134,7 @@ export const action: ActionFunction = async ({ request, params }) => {
   if (!document) {
     setErrorMessage(toastCookie, "Document not found", "Error");
 
-    return redirect(`/`);
+    return redirect("/");
   }
 
   if (document.readOnly) {
@@ -303,7 +303,7 @@ export function CatchBoundary() {
         </div>
         <div className="text-center leading-snug text-white">
           <ExtraLargeTitle className="text-slate-200 mb-8">
-            <b>Sorry</b>! Something went wrong...
+            Что-то пошло не так!...
           </ExtraLargeTitle>
           <SmallSubtitle className="text-slate-200 mb-8">
             {error.data || (
@@ -316,7 +316,7 @@ export function CatchBoundary() {
             href="/"
             className="mx-auto w-24 bg-lime-500 text-slate-900 text-lg font-bold px-5 py-1 rounded-sm uppercase whitespace-nowrap cursor-pointer opacity-90 hover:opacity-100 transition"
           >
-            HOME
+            На главную
           </a>
         </div>
       </div>

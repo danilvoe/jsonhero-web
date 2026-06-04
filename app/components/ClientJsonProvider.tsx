@@ -80,7 +80,7 @@ export function ClientJsonProvider({
           }
 
           sessionStorage.removeItem(storageKey);
-          setError("The file does not contain valid JSON.");
+          setError("Файл не содержит валидный JSON");
           setLoadPhase("idle");
         });
 
@@ -121,7 +121,7 @@ export function ClientJsonProvider({
         }
 
         const message =
-          err instanceof Error ? err.message : "Failed to load document.";
+          err instanceof Error ? err.message : "Не удалось загрузить документ";
         setError(message);
         setLoadPhase("idle");
       });
@@ -141,7 +141,7 @@ export function ClientJsonProvider({
               href="/"
               className="inline-block rounded-sm bg-lime-500 px-4 py-2 text-slate-900"
             >
-              Back to Home
+              На главную
             </a>
           </div>
         </div>
@@ -166,17 +166,17 @@ export function ClientJsonProvider({
         <DocumentLoadingOverlay
           title={
             isParsing
-              ? "Parsing JSON…"
+              ? "Экран загрузки файла…"
               : hasCachedImport && !isDownloading
-              ? "Opening document…"
-              : "Loading document…"
+              ? "Экран загрузки документа…"
+              : "Экран парсинга документа…"
           }
           subtitle={
             isParsing
-              ? "Processing in the background"
+              ? "Обработка в фоновом режиме"
               : hasCachedImport && !isDownloading
-              ? "Preparing viewer"
-              : "Downloading JSON from server"
+              ? "Подготовка отображения"
+              : "Загрузка JSON с сервера"
           }
           percent={overlayPercent}
           indeterminate={hasCachedImport && !isDownloading && !isParsing}

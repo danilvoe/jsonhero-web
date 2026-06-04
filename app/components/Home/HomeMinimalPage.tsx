@@ -13,7 +13,7 @@ export function HomeMinimalPage() {
 
       <main className="flex flex-1 items-center justify-center px-6 pb-16">
         <div className="w-full max-w-lg">
-          <Title className="mb-6 text-white">Open JSON</Title>
+          <Title className="mb-6 text-white">Главная страница</Title>
           <NewFile />
         </div>
       </main>

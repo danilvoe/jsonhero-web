@@ -32,14 +32,14 @@ export function Header() {
             method="delete"
             onSubmit={(e) =>
               !confirm(
-                "This will permanantly delete this document from jsonhero.io, are you sure you want to continue?"
+                "Этот документ будет навсегда удален из json Hero.io. Вы уверены, что хотите продолжить?"
               ) && e.preventDefault()
             }
           >
             <button type="submit">
               <button className="flex items-center justify-center py-1 bg-slate-200 text-slate-800 bg-opacity-80 text-base font-bold px-2 rounded uppercase hover:cursor-pointer hover:bg-opacity-100 transition">
                 <TrashIcon className="w-4 h-4 mr-0.5"></TrashIcon>
-                Delete
+                Удалить
               </button>
             </button>
           </Form>
@@ -49,7 +49,7 @@ export function Header() {
           <PopoverTrigger>
             <button className="flex items-center justify-center bg-lime-500 text-slate-800 bg-opacity-90 text-base font-bold px-2 py-1 rounded uppercase hover:cursor-pointer hover:bg-opacity-100 transition">
               <PlusIcon className="w-4 h-4 mr-0.5"></PlusIcon>
-              New
+              Новый файл
             </button>
           </PopoverTrigger>
           <PopoverContent side="bottom" sideOffset={8}>
@@ -65,7 +65,7 @@ export function Header() {
           <PopoverTrigger>
             <button className="flex items-center justify-center py-1 bg-slate-200 text-slate-800 bg-opacity-90 text-base font-bold px-2 rounded uppercase hover:cursor-pointer hover:bg-opacity-100 transition">
               <ShareIcon className="w-4 h-4 mr-1"></ShareIcon>
-              Share
+              Поделиться
             </button>
           </PopoverTrigger>
           <PopoverContent side="bottom" sideOffset={8}>

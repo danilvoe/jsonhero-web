@@ -22,29 +22,29 @@ export function Footer() {
         <li className="flex items-center">
           <ArrowKeysIcon className="transition text-slate-300 dark:text-slate-500" />
           <Body className="pl-2 pr-4 text-slate-800 transition dark:text-white">
-            Navigate
+            Навигация
           </Body>
         </li>
         <li className="flex items-center">
           <SquareBracketsIcon className="transition text-slate-300 dark:text-slate-500" />
           <Body className="pl-2 pr-4 text-slate-800 transition dark:text-white">
-            History
+            История
           </Body>
         </li>
         <li className="flex items-center">
           <EscapeKeyIcon className="transition text-slate-300 dark:text-slate-500" />
           <Body className="pl-2 pr-4 text-slate-800 transition dark:text-white whitespace-nowrap">
-            Reset path
+            Свернуть
           </Body>
         </li>
         <li className="flex items-center">
           <CopyShortcutIcon className="transition text-slate-300 dark:text-slate-500" />
           <Body className="flex pl-2 pr-4 text-slate-800 transition dark:text-white">
-            Copy&nbsp;
+            Копировать&nbsp;
             <span className="hidden lg:flex whitespace-nowrap">
-              selected&nbsp;
+              выбранный&nbsp;
             </span>
-            node
+            узел
           </Body>
         </li>
       </ol>

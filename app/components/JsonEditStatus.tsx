@@ -95,7 +95,7 @@ export function JsonEditStatus() {
         {parseError
           ? "Fix JSON errors before saving"
           : canPersist
-            ? "Unsaved changes"
+            ? "Несохраненные изменения"
             : "Unsaved changes (download to keep a copy)"}
       </Body>
       {canPersist && (
@@ -107,7 +107,7 @@ export function JsonEditStatus() {
           disabled={isSaving}
           className="text-lime-700 dark:text-lime-400 font-semibold hover:text-lime-800 dark:hover:text-lime-300 transition disabled:opacity-50"
         >
-          {isSaving ? "Saving…" : "Save"}
+          {isSaving ? "Сохранение…" : "Сохранить"}
         </button>
       )}
       {saveError && (

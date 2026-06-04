@@ -22,7 +22,7 @@ export function IndentPreference() {
         className="pr-2 text-slate-800 transition dark:text-white"
         htmlFor="indent"
       >
-        <Body>Indent</Body>
+        <Body>Отступ</Body>
       </label>
       <input
         type="number"

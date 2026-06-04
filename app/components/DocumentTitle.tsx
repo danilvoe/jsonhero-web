@@ -48,7 +48,7 @@ export function DocumentTitle() {
               type="text"
               name="title"
               spellCheck="false"
-              placeholder="Name your JSON file"
+              placeholder="Назовите свой JSON-файл"
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
             />
@@ -63,7 +63,7 @@ export function DocumentTitle() {
                 className="ml-2 text-lime-500 hover:text-lime-600 transition"
                 onClick={() => setEditedTitle(doc.title)}
               >
-                Reset
+                Сбросить
               </button>
             ))
             .otherwise(() => (
@@ -71,7 +71,7 @@ export function DocumentTitle() {
                 type="submit"
                 className="ml-2 text-lime-500 hover:text-lime-600 transition"
               >
-                Save
+                Сохранить
               </button>
             ))}
         </div>

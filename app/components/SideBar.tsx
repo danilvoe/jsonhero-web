@@ -28,7 +28,7 @@ export function SideBar() {
       <ol className="relative">
         <SidebarLink to={`/j/${doc.id}`} hotKey="option+1,alt+1">
           <ToolTip arrow="left">
-            <Body>Column view</Body>
+            <Body>Представление колонки</Body>
             <ShortcutIcon className="w-[26px] h-[26px] ml-1 text-slate-700 bg-slate-200 dark:text-slate-300 dark:bg-slate-800">
               ⌥
             </ShortcutIcon>
@@ -40,7 +40,7 @@ export function SideBar() {
         </SidebarLink>
         <SidebarLink to={`/j/${doc.id}/editor`} hotKey="option+2,alt+2">
           <ToolTip arrow="left">
-            <Body>JSON view</Body>
+            <Body>JSON представление</Body>
             <ShortcutIcon className="w-[26px] h-[26px] ml-1 text-slate-700 bg-slate-200 dark:text-slate-300 dark:bg-slate-800">
               ⌥
             </ShortcutIcon>
@@ -52,7 +52,7 @@ export function SideBar() {
         </SidebarLink>
         <SidebarLink to={`/j/${doc.id}/tree`} hotKey="option+3,alt+3">
           <ToolTip arrow="left">
-            <Body>Tree view</Body>
+            <Body>Представление дерево</Body>
             <ShortcutIcon className="w-[26px] h-[26px] ml-1 text-slate-700 bg-slate-200 dark:text-slate-300 dark:bg-slate-800">
               ⌥
             </ShortcutIcon>
@@ -67,7 +67,7 @@ export function SideBar() {
         <SidebarLink>
           <button type="button" onClick={handleDownload} className="w-full h-full">
             <ToolTip arrow="left">
-              <Body>Download</Body>
+              <Body>Скачать</Body>
             </ToolTip>
             <DownloadIcon className="p-2 w-full h-full" />
           </button>

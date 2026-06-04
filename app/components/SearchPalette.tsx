@@ -117,7 +117,7 @@ export function SearchPalette({
             {...cb.getInputProps({ onKeyDown: handleInputKeyDown })}
             type="text"
             spellCheck="false"
-            placeholder="Search the JSON…"
+            placeholder="Поиск в файле JSON…"
             className="w-full pl-12 pr-4 py-4 rounded-sm text-slate-900 bg-slate-100 text-2xl caret-indigo-700 border-indigo-700 transition dark:text-white dark:bg-slate-900 focus:outline-none focus:ring focus:ring-indigo-700"
           />
         </label>
@@ -126,14 +126,14 @@ export function SearchPalette({
             {searchState.status === "initializing" && (
               <div className="results-loading flex">
                 <LoadingIcon className="animate-spin h-5 w-5 mr-1"></LoadingIcon>
-                <Body className="text-slate-400">Indexing…</Body>
+                <Body className="text-slate-400">Индексация…</Body>
               </div>
             )}
             {searchState.status === "searching" &&
               (!searchState.results || searchState.results.length === 0) && (
                 <div className="results-loading flex">
                   <LoadingIcon className="animate-spin h-5 w-5 mr-1"></LoadingIcon>
-                  <Body className="text-slate-400">Searching…</Body>
+                  <Body className="text-slate-400">Поиск…</Body>
                 </div>
               )}
             {searchState.status === "searching" &&
@@ -141,15 +141,13 @@ export function SearchPalette({
               searchState.results.length > 0 && (
                 <div className="results-loading flex">
                   <LoadingIcon className="animate-spin h-5 w-5 mr-1"></LoadingIcon>
-                  <Body className="text-slate-400">Updating…</Body>
+                  <Body className="text-slate-400">Изменение…</Body>
                 </div>
               )}
             {searchState.results && searchState.results.length > 0 && (
               <div className="results-returned">
                 <Body className="text-slate-400">
-                  {searchState.results.length === 1
-                    ? "1 result"
-                    : `${searchState.results.length} results`}
+                  {getDeclension(searchState.results.length)}
                 </Body>
               </div>
             )}
@@ -160,7 +158,7 @@ export function SearchPalette({
                 <div className="results-none flex">
                   <ExclamationIcon className="h-5 w-5 mr-1 text-white"></ExclamationIcon>
                   <Body className="text-slate-400">
-                    No results for "{cb.inputValue}"
+                    Результатов не найдено для "{cb.inputValue}"
                   </Body>
                 </div>
               )}
@@ -205,21 +203,40 @@ export function SearchPalette({
           <ShortcutIcon className="w-4 h-4 text-sm text-slate-900 bg-slate-300 transition duration-75 group-hover:bg-slate-100 dark:bg-slate-500 dark:group-hover:bg-slate-600">
             ⏎
           </ShortcutIcon>
-          <Body className="text-slate-700 dakr:text-slate-500">to select</Body>
+          <Body className="text-slate-700 dakr:text-slate-500">Начать поиск</Body>
         </div>
         <div className="flex items-center gap-1">
           <ArrowKeysUpDownIcon className="transition text-slate-300 dark:text-slate-500" />
           <Body className="text-slate-700 dakr:text-slate-500">
-            to navigate
+            Навигация
           </Body>
         </div>
         <div className="flex items-center gap-1">
           <EscapeKeyIcon className="transition text-slate-300 dark:text-slate-500" />
-          <Body className="text-slate-700 dakr:text-slate-500">to close</Body>
+          <Body className="text-slate-700 dakr:text-slate-500">Закрыть</Body>
         </div>
       </div>
     </>
   );
+}
+
+function getDeclension(count: number): string {
+  const lastDigit = count % 10;
+  const lastTwoDigits = count % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${count} результатов`;
+  }
+
+  if (lastDigit === 1) {
+    return `${count} результат`;
+  } 
+  else if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${count} результата`;
+  }
+  else {
+    return `${count} результатов`;
+  }
 }
 
 type SearchItemProps = {

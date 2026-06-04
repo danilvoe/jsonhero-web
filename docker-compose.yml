@@ -1,12 +1,14 @@
 services:
   jsonhero:
     build: .
-    network_mode: host
+    ports:
+      - "8080:8787"
     environment:
       SESSION_SECRET: change-me-before-use
       OFFLINE: "true"
       # 30 days; override or unset for no default TTL
       DOCUMENT_DEFAULT_TTL: "2592000"
+      PORT: "8080"
     volumes:
       - jsonhero-kv:/data/kv
     entrypoint:
