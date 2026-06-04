@@ -5,10 +5,14 @@ export async function getStarCount(): Promise<number | undefined> {
     return;
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+
   try {
     const response = await fetch(
       `https://api.github.com/repos/triggerdotdev/jsonhero-web`,
       {
+        signal: controller.signal,
         headers: {
           accept: "application/json",
           "user-agent":
@@ -36,5 +40,7 @@ export async function getStarCount(): Promise<number | undefined> {
   } catch (error) {
     console.error(error);
     return;
+  } finally {
+    clearTimeout(timeout);
   }
 }

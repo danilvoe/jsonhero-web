@@ -11,6 +11,9 @@ kv_namespaces = [
 
 [vars]
 GRAPH_JSON_COLLECTION = "jsonhero-dev"
+# Exposed as worker globals (see app/bindings.d.ts). Docker/local self-host use true.
+OFFLINE = "true"
+DOCUMENT_DEFAULT_TTL = "2592000"
 
 [triggers]
 crons = ["0 * * * *"]
@@ -35,6 +38,8 @@ kv_namespaces = [
 
 [env.production.vars]
 GRAPH_JSON_COLLECTION = "jsonhero-prod"
+OFFLINE = "true"
+DOCUMENT_DEFAULT_TTL = "2592000"
 
 [env.production.triggers]
 crons = ["0 * * * *"]

@@ -16,7 +16,7 @@ services:
       - -c
       - |
         printf 'SESSION_SECRET=%s\nOFFLINE=true\nDOCUMENT_DEFAULT_TTL=%s\n' "$$SESSION_SECRET" "$$DOCUMENT_DEFAULT_TTL" > .env
-        exec npm run start:docker
+        exec npm run start:docker:prod
     restart: unless-stopped
 
 volumes:

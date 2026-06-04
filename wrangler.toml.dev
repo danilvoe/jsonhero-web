@@ -10,6 +10,8 @@ kv_namespaces = [
 
 [vars]
 GRAPH_JSON_COLLECTION = "jsonhero-dev"
+OFFLINE = "true"
+DOCUMENT_DEFAULT_TTL = "2592000"
 
 [site]
 bucket = "./public"

@@ -7,6 +7,8 @@ COPY . /src
 RUN cd /src
 RUN npm install
 RUN echo "SESSION_SECRET=abc123" > .env
-RUN npm run build
+RUN npm run build && npm run build:worker
 
-CMD npm run start:docker
+ENV NODE_ENV=production
+
+CMD npm run start:docker:prod
